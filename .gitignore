@@ -6,6 +6,7 @@ __pycache__/
 *.db
 .env
 venv/
+payrails.app.venv/
 *.sqlite3
 
 # Flutter / Dart

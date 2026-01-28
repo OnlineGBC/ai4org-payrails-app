@@ -1,0 +1,27 @@
+@'
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.env
+venv/
+*.sqlite3
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+'@ | Set-Content .gitignore
+

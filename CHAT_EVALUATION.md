@@ -24,7 +24,7 @@ This document evaluates the decisions and information captured in `FedNowChat.tx
 - Request-for-Payment (RFP) / real-time invoicing
 - Smart routing: FedNow → RTP → ACH → Card fallback (line 88)
 - Single app supporting multiple sponsor banks (line 89)
-- Healthcare vertical: HIPAA-compliant ledger tagging, provider remittance (line 87)
+- ~~Healthcare vertical: HIPAA-compliant ledger tagging, provider remittance (line 87)~~ **Deferred to Phase 2**
 - QR Code and NFC-based payments on mobile (lines 106-107)
 - Real-time balance, notifications, reconciliation
 - Embedded ledger, permissions, audit trail
@@ -59,13 +59,12 @@ The chat references checking these banks against official FedNow and RTP partici
 ### 3.1 Data Models & Database
 
 **What the chat resolves:**
-- Transaction model needs fields for: rail used (FedNow/RTP/ACH/Card), RFP support, HIPAA tagging for healthcare
+- Transaction model needs fields for: rail used (FedNow/RTP/ACH/Card), RFP support
 - Multi-bank support means the merchant model needs a sponsor bank association (or the ability to route through different banks)
 - Ledger model needed — the pitch references an "embedded ledger" for permissions and audit
 
 **What remains open:**
 - No specific schema decisions were made in the chat
-- Healthcare HIPAA tagging adds a compliance dimension to data models (tagged fields, audit requirements)
 - Multi-bank routing adds complexity — need a bank/rail configuration model
 
 ### 3.2 Authentication & Authorization
@@ -99,7 +98,6 @@ The chat references checking these banks against official FedNow and RTP partici
 **What the chat resolves:**
 - KYB outsourced to bank partner
 - SMB focus means simpler onboarding initially
-- Healthcare vertical may have additional onboarding requirements (HIPAA BAA)
 
 **What remains open:**
 - Exact data required for onboarding depends on the sponsor bank's requirements
@@ -116,15 +114,19 @@ The chat references checking these banks against official FedNow and RTP partici
 - FedNow and RTP are 24/7
 - Multi-bank architecture — single app connects to multiple sponsor banks
 
-**What remains open (CRITICAL BLOCKER):**
+**What remains open (unblocked via mock assumptions):**
 - No API documentation from any sponsor bank yet (line 126: "we dont have the API documentation yet")
 - No sandbox/test credentials
 - No confirmed bank partnership — only a candidate list
 - Webhook/callback mechanism unknown
 - Settlement model unknown
-- Card fallback integration not detailed (Visa/Mastercard gateway?)
 
-**This is the single biggest blocker for the project.** Without bank API docs, the integration layer can only be built as a generic abstraction with mock implementations.
+**Phase 1 decisions:**
+- **Mock bank API** will be built to simulate FedNow/RTP/ACH behavior (REST/JSON, OAuth 2.0, webhook callbacks)
+- **Card fallback:** Direct Visa/Mastercard debit rails
+- **Healthcare/HIPAA:** Deferred to Phase 2
+
+Development is **unblocked** — the mock bank layer allows all workstreams to proceed. The mock will be swapped for a real bank client when a partnership is secured.
 
 ### 3.6 Infrastructure & Security
 
@@ -132,12 +134,17 @@ The chat references checking these banks against official FedNow and RTP partici
 - Development is on Windows (confirmed working)
 - Local SQLite for development
 
+**Resolved:**
+- **Cloud provider:** Microsoft Azure
+- **Database:** Azure Database for PostgreSQL (Flexible Server)
+- **Secrets:** Azure Key Vault
+- **Monitoring:** Azure Monitor + Application Insights
+- **Healthcare/HIPAA:** Deferred to Phase 2
+
 **What remains open:**
-- Production cloud provider not decided
-- Production database not decided
-- HIPAA compliance for healthcare vertical requires: encryption at rest, audit logging, BAA with cloud provider, access controls — this significantly raises the infrastructure bar
-- CORS lockdown, HTTPS, secrets management all still needed
+- CORS lockdown, HTTPS, domain name still needed
 - CI/CD not discussed
+- App distribution plan (App Store / Play Store / web-only) TBD
 
 ### 3.7 Frontend Screens
 
@@ -151,7 +158,6 @@ The chat references checking these banks against official FedNow and RTP partici
 
 **What remains open:**
 - No wireframes or UI designs exist
-- Healthcare-specific screens not defined
 - RFP approval/review screen not defined
 - Multi-bank selection UI not defined
 - Batch payment UI for premium tier not defined
@@ -202,22 +208,27 @@ The chat references checking these banks against official FedNow and RTP partici
 **Still needed:**
 - Confirmation: does the sponsor bank handle KYB end-to-end, or does PayRails need a third-party provider?
 - If third-party: which provider? (Alloy, Middesk, Persona)
-- HIPAA compliance requirements for healthcare vertical — who handles BAAs?
 - OFAC/sanctions screening — bank or PayRails?
 
-### 4.3 Bank Account Verification — NOT RESOLVED
+### 4.3 Bank Account Verification — MOCK ASSUMPTIONS FOR PHASE 1
 
-**Nothing in the chat addresses this.** Still need:
-- Verification method (micro-deposits vs. instant via Plaid/MX)
-- Whether the sponsor bank provides this or PayRails must integrate separately
+**Phase 1 mock assumptions:**
+- Simulated micro-deposit verification flow (instant approval in mock)
+- Mock Plaid-like instant verification stub (prepares UI/API for real integration later)
+- Format-only validation: routing number checksum (9 digits), account number length (4-17 digits)
+- Real aggregator integration (Plaid/MX) deferred to Phase 2 when bank partner is secured
 
-### 4.4 Infrastructure & Deployment — NOT RESOLVED
+### 4.4 Infrastructure & Deployment — RESOLVED
 
-**Nothing in the chat addresses production infrastructure.** Still need:
-- Cloud provider choice
-- Production database choice
-- HIPAA-compliant hosting (if healthcare vertical launches early)
-- Domain, SSL, app store distribution plan
+**Decisions:**
+- **Cloud provider:** Microsoft Azure
+- **Database:** Azure Database for PostgreSQL (Flexible Server); SQLite for local dev
+- **Compute:** Azure App Service or Azure Container Apps
+- **Secrets:** Azure Key Vault
+- **Monitoring:** Azure Monitor + Application Insights
+- **SSL/TLS:** Azure-managed certificates
+
+**Still needed:** Production domain name, app distribution plan (App Store / Play Store / web-only)
 
 ### 4.5 Business Logic Decisions — MOSTLY RESOLVED
 
@@ -226,37 +237,52 @@ The chat references checking these banks against official FedNow and RTP partici
 - Payment types: Credit push + Request-for-Payment (RFP)
 - Smart routing: FedNow → RTP → ACH → Card fallback
 - Multi-bank support: yes
-- Verticals: general SMB + healthcare
+- Verticals: general SMB (healthcare deferred to Phase 2)
 - Mobile payment methods: QR Code + NFC
 - USD only (line 8: "all transactions are US or USD-based")
+
+**Newly resolved:**
+- Card fallback: **Direct Visa/Mastercard debit rails** (not via Stripe/Adyen)
+- Healthcare/HIPAA: **Deferred to Phase 2**
 
 **Still needed:**
 - Refund/return policy and flow
 - Notification channels: email, SMS, push, or in-app? (pitch says "notifications" but no specifics)
 - Reporting requirements for merchants
 - Batch/ERP payment details (premium feature — what formats? CSV, API?)
-- Card fallback details: which gateway? (Stripe, Adyen, direct Visa/MC?)
 
 ---
 
 ## Summary: What the Chat Changes
 
-| Category | Before Chat | After Chat |
+| Category | Before Chat | After Chat + Latest Decisions |
 |---|---|---|
-| Sponsor bank | Unknown | 6 candidates identified, no partnership signed |
-| Bank API format | Unknown | REST/JSON confirmed, no docs yet |
+| Sponsor bank | Unknown | 6 candidates identified, no partnership signed; **mock API for Phase 1** |
+| Bank API format | Unknown | REST/JSON confirmed, no docs yet; **mock assumes OAuth 2.0 + webhooks** |
+| Bank account verification | Unknown | **Mock micro-deposit + Plaid-like stub for Phase 1** |
 | Compliance approach | Unknown | Outsourced to bank partner |
 | Payment types | Unknown | Send + receive, credit push + RFP |
-| Routing strategy | Unknown | FedNow → RTP → ACH → Card |
+| Routing strategy | Unknown | FedNow → RTP → ACH → Card (**direct Visa/MC debit**) |
 | Business model | Unknown | SaaS + per-txn markup + premium API |
 | Mobile payments | Unknown | QR Code + NFC confirmed |
-| Healthcare vertical | Not considered | HIPAA-compliant ledger tagging added |
+| Healthcare vertical | Not considered | **Deferred to Phase 2** |
 | Multi-bank | Not considered | Single app for multiple sponsor banks confirmed |
 | Auth method | JWT_SECRET existed | Email/password only, JWT confirmed |
 | Target scale | Unknown | 50K customers, 10M txns/year |
 | Currency | Unknown | USD only |
+| Infrastructure | Unknown | **Microsoft Azure** (PostgreSQL, Key Vault, App Service) |
 | Dev environment | Assumed | Fully confirmed and working |
 
 ### Critical Path
 
-The **#1 blocker** remains the sponsor bank partnership and API documentation. Everything else can be built with mock/stub integrations, but real payments cannot flow without it. The recommended next step is to secure at least a sandbox agreement with one of the candidate banks (Cross River is the most likely to have a developer-friendly API program).
+With mock assumptions in place, **all 8 workstreams are unblocked for Phase 1 development**. The mock bank API layer, mock account verification, and Azure infrastructure decisions remove the previously identified blockers.
+
+**Phase 1** can deliver a fully functional prototype with mock bank integrations.
+
+**Phase 2** (requires real bank partnership) will:
+- Replace mock bank API with real sponsor bank integration
+- Replace mock account verification with Plaid/MX or bank-provided verification
+- Add healthcare/HIPAA-compliant ledger tagging
+- Add real Visa/Mastercard direct debit integration
+
+The recommended parallel track is to continue pursuing a sandbox agreement with one of the candidate banks (Cross River is the most likely to have a developer-friendly API program) while Phase 1 development proceeds.

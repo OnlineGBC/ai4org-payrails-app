@@ -52,10 +52,12 @@ The project has a **working development environment** and **runnable skeletons**
 |---|---|
 | **Merchant model** | Business entity with name, EIN/tax ID, contact info, bank account details, onboarding status, KYB verification status |
 | **User model** | Individual users tied to a merchant, with email, hashed password, role (admin/operator/viewer) |
-| **Transaction model** | Payment records with sender, receiver, amount, currency, rail used (FedNow/RTP/ACH), status (pending/processing/completed/failed), timestamps, reference IDs |
+| **Transaction model** | Payment records with sender, receiver, amount, currency, rail used (FedNow/RTP/ACH/Card), status (pending/processing/completed/failed), timestamps, reference IDs |
 | **Bank account model** | Linked bank accounts with routing number, account number (encrypted), account type, verification status |
 | **Webhook/event log** | Audit trail of all inbound and outbound events (bank callbacks, status changes, API calls) |
-| **Database migrations** | Alembic setup for schema versioning. Migration from SQLite to PostgreSQL for production |
+| **Ledger model** | Embedded ledger for tracking debits, credits, and balances per merchant account with full audit trail |
+| **Bank/rail configuration model** | Sponsor bank connection details, supported rails, limits, and routing preferences — supports multi-bank architecture |
+| **Database migrations** | Alembic setup for schema versioning. Migration from SQLite to PostgreSQL (Azure) for production |
 
 ### 3.2 Backend — Authentication & Authorization
 
@@ -91,27 +93,56 @@ The project has a **working development environment** and **runnable skeletons**
 
 ### 3.5 Backend — Bank & Rail Integration
 
+> **Note:** No sponsor bank API documentation is available yet. Phase 1 will be built against a **mock bank API** that simulates realistic FedNow/RTP/ACH behavior. The mock assumes the following based on publicly available FedNow specifications and common BaaS patterns:
+>
+> **Mock Bank API Assumptions:**
+> - **Protocol:** REST/JSON over HTTPS (as confirmed in chat — the sponsor bank abstracts ISO 20022 internally)
+> - **Authentication:** OAuth 2.0 client credentials flow (standard for BaaS providers like Cross River, Synapse, etc.)
+> - **Endpoints mocked:**
+>   - `POST /transfers` — initiate a credit transfer (FedNow/RTP/ACH)
+>   - `GET /transfers/{id}` — check transfer status
+>   - `POST /rfp` — send a Request for Payment
+>   - `GET /balance` — retrieve account balance
+>   - `GET /transfers` — list transfers with filters
+>   - `POST /ach/originate` — initiate ACH transfer
+> - **Webhooks:** Bank sends POST callbacks to a PayRails webhook URL for status changes (pending → processing → completed/failed/returned)
+> - **FedNow limits:** Up to $500,000 per transaction (default FedNow limit; $10M is the max configurable by the bank)
+> - **RTP limits:** Up to $1,000,000 per transaction (TCH default)
+> - **ACH limits:** No per-transaction limit, but subject to daily/monthly caps set by the bank
+> - **Settlement:** FedNow and RTP settle in real time (seconds). ACH settles next business day
+> - **Idempotency:** Mock supports idempotency keys via `X-Idempotency-Key` header
+> - **Error codes:** Standardized error responses (insufficient_funds, account_closed, invalid_routing, timeout, rail_unavailable)
+>
+> When a real bank partner is secured, the mock layer will be replaced with the actual bank API client. The abstraction layer is designed to make this swap straightforward.
+
 | Item | Description |
 |---|---|
-| **FedNow integration** | Connect to the sponsor bank's FedNow gateway to send/receive ISO 20022 messages (pacs.008 for credit transfers, pacs.002 for status) |
-| **RTP integration** | Connect to the sponsor bank's RTP (The Clearing House) gateway for real-time payments |
-| **ACH fallback** | For cases where real-time rails are unavailable or amount exceeds limits — Nacha file generation or API-based ACH via sponsor bank |
-| **Rail selection logic** | Routing engine that picks FedNow vs RTP vs ACH based on: amount limits, recipient bank availability, time of day, cost |
-| **Idempotency** | Ensure duplicate payment requests don't result in duplicate transactions |
-| **Reconciliation** | End-of-day reconciliation between PayRails records and sponsor bank settlement reports |
+| **Mock bank API service** | In-process mock that simulates bank responses with realistic delays, statuses, and error scenarios |
+| **Bank API abstraction layer** | Interface/adapter pattern so the mock can be swapped for a real bank client without changing business logic |
+| **FedNow integration (mock)** | Simulates credit transfer initiation and status callbacks via the mock |
+| **RTP integration (mock)** | Simulates RTP payments with appropriate limits and timing |
+| **ACH fallback (mock)** | Simulates ACH origination with next-business-day settlement |
+| **Card fallback** | Direct integration with Visa/Mastercard debit rails as the final fallback option |
+| **Rail selection logic** | Routing engine that picks FedNow → RTP → ACH → Card based on: amount limits, recipient bank availability, time of day, cost |
+| **Idempotency** | Ensure duplicate payment requests don't result in duplicate transactions via `X-Idempotency-Key` |
+| **Reconciliation** | End-of-day reconciliation between PayRails records and bank settlement reports (mock generates simulated settlement files) |
 
 ### 3.6 Backend — Infrastructure & Security
+
+> **Decision:** Azure is the cloud provider for production infrastructure.
 
 | Item | Description |
 |---|---|
 | **CORS lockdown** | Replace `allow_origins=["*"]` with specific allowed origins |
-| **HTTPS enforcement** | TLS termination in production |
+| **HTTPS enforcement** | TLS termination via Azure Application Gateway or Azure Front Door |
 | **Encryption at rest** | Encrypt sensitive fields (bank account numbers, SSNs) in the database |
-| **Logging & monitoring** | Structured logging, error tracking (Sentry or similar), metrics |
-| **Environment config** | Migrate from `.env` to a secrets manager for production (AWS Secrets Manager, Vault, etc.) |
+| **Logging & monitoring** | Structured logging, error tracking (Sentry or Azure Monitor/Application Insights), metrics |
+| **Environment config** | Migrate from `.env` to Azure Key Vault for production secrets management |
+| **Database** | Azure Database for PostgreSQL (Flexible Server) for production; SQLite remains for local dev |
+| **Compute** | Azure App Service or Azure Container Apps for the FastAPI backend |
 | **Pinned dependencies** | Add version pins to `requirements.txt` (e.g., `fastapi==0.115.0`) |
 | **Tests** | Unit tests for models/services, integration tests for API endpoints, mock tests for bank integrations |
-| **CI/CD** | GitHub Actions or similar for automated testing and deployment |
+| **CI/CD** | GitHub Actions with deployment to Azure |
 
 ### 3.7 Frontend — Screens & Navigation
 
@@ -168,33 +199,58 @@ This is the most important dependency. PayRails cannot process real payments wit
 | **API access** | Sandbox credentials and docs for the chosen compliance provider |
 | **Ongoing monitoring** | Is continuous transaction monitoring (SAR filing, OFAC screening) handled by the sponsor bank or PayRails? |
 
-### 4.3 Bank Account Verification
+### 4.3 Bank Account Verification — MOCK ASSUMPTIONS FOR PHASE 1
 
-| Need | Detail |
+> **Decision:** Phase 1 will use a mock bank account verification flow. When a real bank partner is secured, the mock will be replaced with the bank's verification method or a third-party aggregator.
+
+**Mock Assumptions:**
+- **Verification method:** Simulated micro-deposit flow — the mock instantly "sends" two small deposits (e.g., $0.12, $0.34) and the user confirms the amounts. In the mock, any amounts entered are accepted
+- **Account validation:** Mock validates routing number format (9 digits, valid checksum) and account number format (4-17 digits). No real bank lookup is performed
+- **Instant verification:** A mock Plaid-like flow is stubbed — user selects a bank from a list, enters test credentials, and the mock returns a verified account. This prepares the UI and API for a real Plaid/MX integration later
+- **Data stored:** Routing number, last 4 digits of account number (full number encrypted), account type (checking/savings), verification status, verification method used
+
+| Need | Status |
 |---|---|
-| **Verification method** | Micro-deposits (slow, 2-3 days), or instant verification via aggregator? |
-| **Aggregator choice** | If instant: Plaid, MX, Finicity, or Yodlee? Need API credentials and docs |
-| **Account validation** | Does the sponsor bank provide account/routing number validation, or should PayRails use a third-party service? |
+| **Verification method** | Mocked: micro-deposit simulation + instant verification stub |
+| **Aggregator choice** | Deferred to Phase 2 — mock Plaid-like interface built for future swap |
+| **Account validation** | Mocked: format validation only (routing number checksum, account number length) |
 
-### 4.4 Infrastructure & Deployment
+### 4.4 Infrastructure & Deployment — RESOLVED
 
-| Need | Detail |
+> **Decision:** Azure is the cloud provider.
+
+| Need | Decision |
 |---|---|
-| **Cloud provider** | AWS, GCP, Azure — or on-prem? Affects database, secrets management, deployment pipeline choices |
-| **Database** | PostgreSQL is the likely production choice — hosted (RDS, Cloud SQL) or self-managed? |
-| **Domain & SSL** | Production domain name, SSL certificate provisioning (ACM, Let's Encrypt) |
-| **App distribution** | Will the Flutter app be distributed via App Store / Play Store, or web-only initially? |
+| **Cloud provider** | **Microsoft Azure** |
+| **Database** | Azure Database for PostgreSQL (Flexible Server); SQLite for local development |
+| **Compute** | Azure App Service or Azure Container Apps for FastAPI backend |
+| **Secrets management** | Azure Key Vault |
+| **Monitoring** | Azure Monitor + Application Insights |
+| **SSL/TLS** | Azure-managed certificates via Application Gateway or Front Door |
+| **Domain** | Still needed — production domain name TBD |
+| **App distribution** | Still needed — App Store / Play Store / web-only decision TBD |
 
 ### 4.5 Business Logic Decisions
 
+**Resolved:**
+
+| Need | Decision |
+|---|---|
+| **Fee structure** | SaaS monthly per active account + $0.01–$0.05 per transaction + premium API tier |
+| **Multi-currency** | USD only |
+| **Payment types** | Credit push + Request-for-Payment (RFP) |
+| **Smart routing** | FedNow → RTP → ACH → Card (direct Visa/Mastercard debit rails) |
+| **Card fallback** | Direct Visa/Mastercard debit rails (not via Stripe/Adyen) |
+| **Healthcare/HIPAA** | **Deferred to Phase 2** — removed from Phase 1 scope |
+
+**Still needed:**
+
 | Need | Detail |
 |---|---|
-| **Fee structure** | Does PayRails charge per transaction? Flat fee, percentage, or tiered? This affects the transaction model and reporting |
-| **Multi-currency** | USD only, or multi-currency support needed? |
-| **Payment types** | Credit push only? Or also request-for-payment (RfP) / debit pull? |
 | **Refunds/returns** | What is the refund policy and flow? How are returned payments handled? |
 | **Notifications** | Email, SMS, push, or in-app only for payment status updates? |
 | **Reporting** | What reports do merchants need? (Daily settlement, monthly statements, tax documents) |
+| **Batch/ERP payments** | Premium feature — what formats? (CSV upload, API?) |
 
 ---
 
@@ -210,7 +266,7 @@ This is the most important dependency. PayRails cannot process real payments wit
 | Database models | Not started |
 | Authentication | Not started |
 | Payment APIs | Not started |
-| Bank integration | Not started (blocked on sponsor bank info) |
+| Bank integration | Not started (mock assumptions defined — unblocked for Phase 1) |
 | Compliance/KYB | Not started (blocked on provider choice) |
 | Frontend scaffold | Done |
 | Frontend screens | Not started |

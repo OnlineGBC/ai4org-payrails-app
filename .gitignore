@@ -8,6 +8,9 @@ venv/
 payrails.app.venv/
 *.sqlite3
 
+# SDK
+_sdk/
+
 # Flutter / Dart
 .dart_tool/
 .flutter-plugins

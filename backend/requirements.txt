@@ -2,8 +2,10 @@ fastapi
 uvicorn
 sqlalchemy
 bcrypt
-python-jose
+python-jose[cryptography]
 alembic
 psycopg2-binary
 httpx
 pytest
+pydantic-settings
+cryptography

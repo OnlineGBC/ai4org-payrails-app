@@ -1,3 +1,9 @@
 fastapi
 uvicorn
 sqlalchemy
+bcrypt
+python-jose
+alembic
+psycopg2-binary
+httpx
+pytest

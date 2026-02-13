@@ -16,8 +16,8 @@ _sdk/
 .flutter-plugins
 .flutter-plugins-dependencies
 build/
-ios/Flutter/ephemeral/
-macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
 
 # IDE
 .vscode/

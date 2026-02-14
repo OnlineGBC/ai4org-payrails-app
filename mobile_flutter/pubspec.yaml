@@ -13,7 +13,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   mobile_scanner: ^6.0.2
   qr_flutter: ^4.1.0
-  nfc_manager: ^3.5.0
+  nfc_manager: ^4.1.1
 
 flutter:
   uses-material-design: true

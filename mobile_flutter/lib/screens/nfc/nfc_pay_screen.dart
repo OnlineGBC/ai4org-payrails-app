@@ -24,7 +24,8 @@ class _NfcPayScreenState extends ConsumerState<NfcPayScreen> {
 
   Future<void> _checkNfc() async {
     try {
-      final available = await NfcManager.instance.isAvailable();
+      final availability = await NfcManager.instance.checkAvailability();
+      final available = availability == NfcAvailability.available;
       setState(() {
         _isAvailable = available;
         _statusMessage =

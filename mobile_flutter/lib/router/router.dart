@@ -11,6 +11,7 @@ import '../screens/payments/send_payment_screen.dart';
 import '../screens/merchant/merchant_screen.dart';
 import '../screens/bank_accounts/bank_account_list_screen.dart';
 import '../screens/bank_accounts/add_bank_account_screen.dart';
+import '../screens/bank_accounts/verify_bank_account_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/qr/qr_generate_screen.dart';
 import '../screens/qr/qr_scan_screen.dart';
@@ -95,6 +96,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.addBankAccount,
         builder: (context, state) => const AddBankAccountScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.verifyBankAccount,
+        builder: (context, state) => VerifyBankAccountScreen(
+          merchantId: state.uri.queryParameters['merchantId']!,
+          accountId: state.uri.queryParameters['accountId']!,
+        ),
       ),
       GoRoute(
         path: RouteNames.qrGenerate,

@@ -18,12 +18,14 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = ref.read(authStateProvider).user;
-      if (user?.merchantId != null) {
-        ref.read(bankAccountListProvider.notifier).load(user!.merchantId!);
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+  }
+
+  void _reload() {
+    final user = ref.read(authStateProvider).user;
+    if (user?.merchantId != null) {
+      ref.read(bankAccountListProvider.notifier).load(user!.merchantId!);
+    }
   }
 
   @override
@@ -33,7 +35,7 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
     return Scaffold(
       appBar: const PayRailsAppBar(title: 'Bank Accounts'),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(RouteNames.addBankAccount),
+        onPressed: () => context.push(RouteNames.addBankAccount).then((_) => _reload()),
         tooltip: 'Add Bank Account',
         child: const Icon(Icons.add),
       ),
@@ -55,6 +57,18 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
                     'Routing: ${acct.routingNumber} | ****${acct.accountNumberLast4 ?? ""}',
                   ),
                   trailing: StatusChip(status: acct.verificationStatus),
+                  onTap: () {
+                    if (acct.verificationStatus == 'verified') {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Already verified')),
+                      );
+                    } else {
+                      final user = ref.read(authStateProvider).user;
+                      context.push(
+                        '${RouteNames.verifyBankAccount}?merchantId=${user!.merchantId!}&accountId=${acct.id}',
+                      ).then((_) => _reload());
+                    }
+                  },
                 ),
               );
             },

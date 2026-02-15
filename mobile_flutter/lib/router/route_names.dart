@@ -8,6 +8,7 @@ class RouteNames {
   static const String merchant = '/merchant';
   static const String bankAccounts = '/bank-accounts';
   static const String addBankAccount = '/bank-accounts/add';
+  static const String verifyBankAccount = '/bank-accounts/verify';
   static const String settings = '/settings';
   static const String qrGenerate = '/qr/generate';
   static const String qrScan = '/qr/scan';

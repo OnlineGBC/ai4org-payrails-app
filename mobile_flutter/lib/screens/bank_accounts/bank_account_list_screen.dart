@@ -34,6 +34,7 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
       appBar: const PayRailsAppBar(title: 'Bank Accounts'),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push(RouteNames.addBankAccount),
+        tooltip: 'Add Bank Account',
         child: const Icon(Icons.add),
       ),
       body: accountsState.when(

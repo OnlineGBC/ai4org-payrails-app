@@ -9,7 +9,8 @@
       "Bash(flutter clean:*)",
       "Bash(flutter pub get:*)",
       "Bash(tasklist:*)",
-      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" devices)"
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" devices)",
+      "Bash(python:*)"
     ]
   }
 }

@@ -125,13 +125,17 @@ def list_bank_accounts(
     accounts = db.query(BankAccount).filter(BankAccount.merchant_id == merchant_id).all()
     result = []
     for acc in accounts:
-        decrypted = decrypt_value(acc.encrypted_account_number)
+        try:
+            decrypted = decrypt_value(acc.encrypted_account_number)
+            last4 = decrypted[-4:] if decrypted else None
+        except Exception:
+            last4 = "****"
         result.append(BankAccountResponse(
             id=acc.id,
             merchant_id=acc.merchant_id,
             bank_name=acc.bank_name,
             routing_number=acc.routing_number,
-            account_number_last4=decrypted[-4:] if decrypted else None,
+            account_number_last4=last4,
             account_type=acc.account_type,
             verification_status=acc.verification_status,
             created_at=acc.created_at,

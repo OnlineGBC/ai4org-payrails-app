@@ -78,6 +78,7 @@ class SettingsScreen extends ConsumerWidget {
             label: const Text('Logout'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Colors.white,
             ),
           ),
         ],

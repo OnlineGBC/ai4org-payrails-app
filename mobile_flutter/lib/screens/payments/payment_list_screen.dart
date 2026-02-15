@@ -54,12 +54,14 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
             onPressed: _loadData,
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push(RouteNames.sendPayment),
+        tooltip: 'Send Payment',
         child: const Icon(Icons.add),
       ),
       body: txnState.when(

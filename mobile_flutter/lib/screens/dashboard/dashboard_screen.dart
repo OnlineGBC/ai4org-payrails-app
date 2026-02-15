@@ -42,10 +42,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code),
+            tooltip: 'QR Payment',
             onPressed: () => context.push(RouteNames.qrGenerate),
           ),
           IconButton(
             icon: const Icon(Icons.nfc),
+            tooltip: 'NFC Payment',
             onPressed: () => context.push(RouteNames.nfcPay),
           ),
         ],

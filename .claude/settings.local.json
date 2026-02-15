@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(\"C:\\\\PROGRA~1\\\\Python310\\\\python.exe\" -c:*)",
+      "WebSearch",
+      "Bash(flutter clean:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(tasklist:*)",
+      "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" devices)"
+    ]
+  }
+}

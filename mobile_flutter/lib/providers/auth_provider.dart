@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/api_client.dart';
@@ -97,3 +98,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 }
+
+/// Bridges Riverpod [authStateProvider] to a [ChangeNotifier] so GoRouter
+/// can use it as a [refreshListenable] without recreating the router.
+class AuthChangeNotifier extends ChangeNotifier {
+  AuthChangeNotifier(Ref ref) {
+    ref.listen<AuthState>(authStateProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+}
+
+final authChangeNotifierProvider = Provider<AuthChangeNotifier>((ref) {
+  return AuthChangeNotifier(ref);
+});

@@ -17,16 +17,14 @@ import '../screens/qr/qr_scan_screen.dart';
 import '../screens/nfc/nfc_pay_screen.dart';
 import 'route_names.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
-
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final notifier = ref.read(authChangeNotifierProvider);
 
   return GoRouter(
-    navigatorKey: _rootNavigatorKey,
     initialLocation: RouteNames.dashboard,
+    refreshListenable: notifier,
     redirect: (context, state) {
+      final authState = ref.read(authStateProvider);
       final isAuth = authState.status == AuthStatus.authenticated;
       final isAuthRoute = state.matchedLocation == RouteNames.login ||
           state.matchedLocation == RouteNames.register;
@@ -45,7 +43,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       ShellRoute(
-        navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => ScaffoldWithNav(child: child),
         routes: [
           GoRoute(

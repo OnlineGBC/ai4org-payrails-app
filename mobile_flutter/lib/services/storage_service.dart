@@ -4,7 +4,12 @@ class StorageService {
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    webOptions: WebOptions(
+      dbName: 'PayRailsSecureStorage',
+      publicKey: 'PayRailsPublicKey',
+    ),
+  );
 
   Future<void> saveTokens({
     required String accessToken,

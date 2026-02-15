@@ -8,11 +8,15 @@ import '../../widgets/payrails_app_bar.dart';
 class VerifyBankAccountScreen extends ConsumerStatefulWidget {
   final String merchantId;
   final String accountId;
+  final String amount1;
+  final String amount2;
 
   const VerifyBankAccountScreen({
     super.key,
     required this.merchantId,
     required this.accountId,
+    this.amount1 = '',
+    this.amount2 = '',
   });
 
   @override
@@ -27,6 +31,13 @@ class _VerifyBankAccountScreenState
   final _amount2Controller = TextEditingController();
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount1Controller.text = widget.amount1;
+    _amount2Controller.text = widget.amount2;
+  }
 
   String _extractError(Object e) {
     if (e is DioException && e.response?.data is Map) {

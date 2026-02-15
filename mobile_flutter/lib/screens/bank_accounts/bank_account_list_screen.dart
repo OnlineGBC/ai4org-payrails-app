@@ -65,7 +65,7 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
                     } else {
                       final user = ref.read(authStateProvider).user;
                       context.push(
-                        '${RouteNames.verifyBankAccount}?merchantId=${user!.merchantId!}&accountId=${acct.id}',
+                        '${RouteNames.verifyBankAccount}?merchantId=${user!.merchantId!}&accountId=${acct.id}&amount1=${acct.microDepositAmount1 ?? ""}&amount2=${acct.microDepositAmount2 ?? ""}',
                       ).then((_) => _reload());
                     }
                   },

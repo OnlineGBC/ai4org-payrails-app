@@ -6,6 +6,8 @@ class BankAccount {
   final String? accountNumberLast4;
   final String accountType;
   final String verificationStatus;
+  final String? microDepositAmount1;
+  final String? microDepositAmount2;
   final DateTime? createdAt;
 
   BankAccount({
@@ -16,6 +18,8 @@ class BankAccount {
     this.accountNumberLast4,
     required this.accountType,
     required this.verificationStatus,
+    this.microDepositAmount1,
+    this.microDepositAmount2,
     this.createdAt,
   });
 
@@ -28,6 +32,8 @@ class BankAccount {
       accountNumberLast4: json['account_number_last4'] as String?,
       accountType: json['account_type'] as String,
       verificationStatus: json['verification_status'] as String,
+      microDepositAmount1: json['micro_deposit_amount_1'] as String?,
+      microDepositAmount2: json['micro_deposit_amount_2'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,

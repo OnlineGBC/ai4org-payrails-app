@@ -102,6 +102,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => VerifyBankAccountScreen(
           merchantId: state.uri.queryParameters['merchantId']!,
           accountId: state.uri.queryParameters['accountId']!,
+          amount1: state.uri.queryParameters['amount1'] ?? '',
+          amount2: state.uri.queryParameters['amount2'] ?? '',
         ),
       ),
       GoRoute(

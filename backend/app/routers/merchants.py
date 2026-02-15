@@ -112,6 +112,8 @@ def add_bank_account(
         account_number_last4=payload.account_number[-4:],
         account_type=account.account_type,
         verification_status=account.verification_status,
+        micro_deposit_amount_1=account.micro_deposit_amount_1,
+        micro_deposit_amount_2=account.micro_deposit_amount_2,
         created_at=account.created_at,
     )
 
@@ -138,6 +140,8 @@ def list_bank_accounts(
             account_number_last4=last4,
             account_type=acc.account_type,
             verification_status=acc.verification_status,
+            micro_deposit_amount_1=acc.micro_deposit_amount_1,
+            micro_deposit_amount_2=acc.micro_deposit_amount_2,
             created_at=acc.created_at,
         ))
     return result
@@ -187,6 +191,8 @@ def verify_micro_deposits_endpoint(
         account_number_last4=decrypted[-4:] if decrypted else None,
         account_type=account.account_type,
         verification_status=account.verification_status,
+        micro_deposit_amount_1=account.micro_deposit_amount_1,
+        micro_deposit_amount_2=account.micro_deposit_amount_2,
         created_at=account.created_at,
     )
 
@@ -223,5 +229,7 @@ def verify_instant_endpoint(
         account_number_last4=decrypted[-4:] if decrypted else None,
         account_type=account.account_type,
         verification_status=account.verification_status,
+        micro_deposit_amount_1=account.micro_deposit_amount_1,
+        micro_deposit_amount_2=account.micro_deposit_amount_2,
         created_at=account.created_at,
     )

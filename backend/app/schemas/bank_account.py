@@ -18,6 +18,8 @@ class BankAccountResponse(BaseModel):
     account_number_last4: Optional[str] = None
     account_type: str
     verification_status: str
+    micro_deposit_amount_1: Optional[str] = None
+    micro_deposit_amount_2: Optional[str] = None
     created_at: Optional[datetime] = None
 
     class Config:

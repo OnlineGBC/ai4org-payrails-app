@@ -6,8 +6,9 @@ class ApiConfig {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
 
-    // Web browser uses localhost; Android emulator uses 10.0.2.2
-    if (kIsWeb) return 'http://localhost:8000';
+    // Web: empty string → relative URLs (nginx proxies to backend)
+    // For local dev without Docker, set API_BASE_URL=http://localhost:8000
+    if (kIsWeb) return '';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000';
     }

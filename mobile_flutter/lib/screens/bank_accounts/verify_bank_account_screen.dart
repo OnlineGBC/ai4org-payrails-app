@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +27,14 @@ class _VerifyBankAccountScreenState
   final _amount2Controller = TextEditingController();
   bool _isLoading = false;
   String? _error;
+
+  String _extractError(Object e) {
+    if (e is DioException && e.response?.data is Map) {
+      final detail = e.response!.data['detail'];
+      if (detail != null) return detail.toString();
+    }
+    return e.toString();
+  }
 
   @override
   void dispose() {
@@ -58,7 +67,7 @@ class _VerifyBankAccountScreenState
         context.pop();
       }
     } catch (e) {
-      setState(() => _error = 'Verification failed: $e');
+      setState(() => _error = _extractError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -81,7 +90,7 @@ class _VerifyBankAccountScreenState
         context.pop();
       }
     } catch (e) {
-      setState(() => _error = 'Verification failed: $e');
+      setState(() => _error = _extractError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

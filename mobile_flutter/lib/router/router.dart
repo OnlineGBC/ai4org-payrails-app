@@ -33,6 +33,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuth && isAuthRoute) return RouteNames.dashboard;
       return null;
     },
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Page not found'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => GoRouter.of(context).go(RouteNames.dashboard),
+              child: const Text('Go to Dashboard'),
+            ),
+          ],
+        ),
+      ),
+    ),
     routes: [
       GoRoute(
         path: RouteNames.login,

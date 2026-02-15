@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -23,6 +24,10 @@ class _NfcPayScreenState extends ConsumerState<NfcPayScreen> {
   }
 
   Future<void> _checkNfc() async {
+    if (kIsWeb) {
+      setState(() => _statusMessage = 'NFC is not supported in the browser. Use the mobile app for NFC payments.');
+      return;
+    }
     try {
       final availability = await NfcManager.instance.checkAvailability();
       final available = availability == NfcAvailability.enabled;

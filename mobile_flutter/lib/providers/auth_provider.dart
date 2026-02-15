@@ -94,7 +94,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    await _authService.logout();
+    try {
+      await _authService.logout();
+    } catch (_) {
+      // Storage clear may fail on web; proceed with state change regardless
+    }
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 }

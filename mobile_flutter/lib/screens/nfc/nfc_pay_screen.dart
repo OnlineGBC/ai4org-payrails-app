@@ -25,7 +25,7 @@ class _NfcPayScreenState extends ConsumerState<NfcPayScreen> {
   Future<void> _checkNfc() async {
     try {
       final availability = await NfcManager.instance.checkAvailability();
-      final available = availability == NfcAvailability.available;
+      final available = availability == NfcAvailability.enabled;
       setState(() {
         _isAvailable = available;
         _statusMessage =
@@ -45,6 +45,7 @@ class _NfcPayScreenState extends ConsumerState<NfcPayScreen> {
     });
 
     NfcManager.instance.startSession(
+      pollingOptions: {NfcPollingOption.iso14443},
       onDiscovered: (NfcTag tag) async {
         final user = ref.read(authStateProvider).user;
         setState(() {
@@ -52,14 +53,7 @@ class _NfcPayScreenState extends ConsumerState<NfcPayScreen> {
               'Tag detected! Merchant: ${user?.merchantId ?? "unknown"}';
           _isScanning = false;
         });
-        NfcManager.instance.stopSession();
-      },
-      onError: (error) async {
-        setState(() {
-          _statusMessage = 'NFC Error: ${error.message}';
-          _isScanning = false;
-        });
-        NfcManager.instance.stopSession();
+        await NfcManager.instance.stopSession();
       },
     );
   }

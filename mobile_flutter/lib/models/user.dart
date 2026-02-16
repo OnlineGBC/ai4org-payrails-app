@@ -25,6 +25,9 @@ class User {
     );
   }
 
+  bool get isConsumer => role == 'user';
+  bool get isMerchant => role == 'merchant_admin';
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'email': email,

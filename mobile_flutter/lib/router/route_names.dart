@@ -13,4 +13,10 @@ class RouteNames {
   static const String qrGenerate = '/qr/generate';
   static const String qrScan = '/qr/scan';
   static const String nfcPay = '/nfc/pay';
+  static const String consumerDashboard = '/consumer/dashboard';
+  static const String consumerPayConfirm = '/consumer/pay-confirm';
+  static const String consumerWallet = '/consumer/wallet';
+  static const String consumerSettings = '/consumer/settings';
+  static const String merchantCreatePaymentRequest = '/merchant/create-payment-request';
+  static const String merchantPaymentRequestQr = '/merchant/payment-request-qr';
 }

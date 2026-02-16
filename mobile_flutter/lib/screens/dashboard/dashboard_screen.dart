@@ -110,6 +110,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () =>
+                    context.push(RouteNames.merchantCreatePaymentRequest),
+                icon: const Icon(Icons.qr_code),
+                label: const Text('Request Pay'),
+              ),
+            ),
             const SizedBox(height: 24),
 
             // Recent transactions

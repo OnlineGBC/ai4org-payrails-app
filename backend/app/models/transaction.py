@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Numeric, DateTime, func
+from sqlalchemy import Column, String, Numeric, DateTime, ForeignKey, func
 from app.database import Base
 
 
@@ -7,8 +7,10 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    sender_merchant_id = Column(String, nullable=False, index=True)
+    sender_merchant_id = Column(String, nullable=True, index=True)
+    sender_user_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     receiver_merchant_id = Column(String, nullable=False, index=True)
+    payment_request_id = Column(String, ForeignKey("payment_requests.id"), nullable=True, index=True)
     sender_bank_account_id = Column(String, nullable=True)
     receiver_bank_account_id = Column(String, nullable=True)
     amount = Column(Numeric(12, 2), nullable=False)

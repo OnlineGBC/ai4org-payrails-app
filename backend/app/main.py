@@ -5,7 +5,7 @@ from app.config import settings
 from app.database import engine, SessionLocal
 from app.models import *  # noqa: F401,F403 — register all models
 from app.database import Base
-from app.routers import auth, payments, merchants, webhooks
+from app.routers import auth, payments, merchants, webhooks, consumer
 
 app = FastAPI(title="PayRails Backend")
 
@@ -23,6 +23,7 @@ app.include_router(auth.router)
 app.include_router(payments.router)
 app.include_router(merchants.router)
 app.include_router(webhooks.router)
+app.include_router(consumer.router)
 
 
 @app.on_event("startup")

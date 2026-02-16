@@ -1,6 +1,7 @@
 """
 Seed script — run from backend/ with: python -m app.seed
-Creates: 1 BankConfig, 2 Merchants, 2 Users, 2 BankAccounts, initial $100K balance each.
+Creates: 1 BankConfig, 2 Merchants, 2 Merchant Users, 2 Consumer Users,
+2 BankAccounts, initial $100K merchant balances, $500 consumer wallets.
 """
 from decimal import Decimal
 from app.database import engine, SessionLocal, Base
@@ -10,6 +11,7 @@ from app.models.user import User
 from app.models.bank_account import BankAccount
 from app.services.auth_service import hash_password
 from app.services.ledger_service import record_credit
+from app.services.wallet_service import wallet_credit
 from app.utils.encryption import encrypt_value
 
 
@@ -120,7 +122,32 @@ def seed():
             db.commit()
             print("Created BankAccount for Globex Inc")
 
-        # Initial balances — $100K each
+        # Consumer Users
+        c1 = db.query(User).filter(User.email == "consumer1@test.com").first()
+        if not c1:
+            c1 = User(
+                id="user-consumer-001",
+                email="consumer1@test.com",
+                hashed_password=hash_password("password123"),
+                role="user",
+            )
+            db.add(c1)
+            db.commit()
+            print("Created Consumer: consumer1@test.com / password123")
+
+        c2 = db.query(User).filter(User.email == "consumer2@test.com").first()
+        if not c2:
+            c2 = User(
+                id="user-consumer-002",
+                email="consumer2@test.com",
+                hashed_password=hash_password("password123"),
+                role="user",
+            )
+            db.add(c2)
+            db.commit()
+            print("Created Consumer: consumer2@test.com / password123")
+
+        # Initial balances — $100K each for merchants
         from app.models.ledger import Ledger
         if not db.query(Ledger).filter(Ledger.merchant_id == "merchant-001").first():
             record_credit(db, "merchant-001", Decimal("100000.00"), description="Initial seed balance")
@@ -129,6 +156,15 @@ def seed():
         if not db.query(Ledger).filter(Ledger.merchant_id == "merchant-002").first():
             record_credit(db, "merchant-002", Decimal("100000.00"), description="Initial seed balance")
             print("Credited $100,000 to Globex Inc")
+
+        # Consumer wallet balances — $500 each
+        if not db.query(Ledger).filter(Ledger.user_id == "user-consumer-001").first():
+            wallet_credit(db, "user-consumer-001", Decimal("500.00"), description="Initial wallet balance")
+            print("Credited $500 to consumer1@test.com")
+
+        if not db.query(Ledger).filter(Ledger.user_id == "user-consumer-002").first():
+            wallet_credit(db, "user-consumer-002", Decimal("500.00"), description="Initial wallet balance")
+            print("Credited $500 to consumer2@test.com")
 
         print("\nSeed complete!")
     finally:

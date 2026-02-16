@@ -22,21 +22,35 @@ class _QrScanScreenState extends State<QrScanScreen> {
     setState(() => _scanned = true);
 
     final data = barcode!.rawValue!;
-    // Parse payrails://pay?merchant=xxx
     final uri = Uri.tryParse(data);
-    final merchantId = uri?.queryParameters['merchant'];
 
-    if (merchantId != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Merchant found: $merchantId')),
-      );
-      context.pushReplacement(RouteNames.sendPayment);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid QR code')),
-      );
-      setState(() => _scanned = false);
+    if (uri != null && uri.scheme == 'payrails') {
+      if (uri.host == 'pay-request') {
+        // B2C2B payment request QR: payrails://pay-request?id=<requestId>
+        final requestId = uri.queryParameters['id'];
+        if (requestId != null) {
+          context.push(
+            '${RouteNames.consumerPayConfirm}?requestId=$requestId',
+          );
+          return;
+        }
+      } else if (uri.host == 'pay') {
+        // Legacy M2M QR: payrails://pay?merchant=xxx
+        final merchantId = uri.queryParameters['merchant'];
+        if (merchantId != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Merchant found: $merchantId')),
+          );
+          context.pushReplacement(RouteNames.sendPayment);
+          return;
+        }
+      }
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Invalid QR code')),
+    );
+    setState(() => _scanned = false);
   }
 
   @override

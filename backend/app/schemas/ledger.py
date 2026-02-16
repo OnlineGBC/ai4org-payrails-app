@@ -21,3 +21,8 @@ class LedgerEntry(BaseModel):
 class BalanceResponse(BaseModel):
     merchant_id: str
     balance: Decimal
+
+
+class WalletBalanceResponse(BaseModel):
+    user_id: str
+    balance: Decimal

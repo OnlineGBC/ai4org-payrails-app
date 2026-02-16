@@ -7,7 +7,8 @@ class Ledger(Base):
     __tablename__ = "ledger"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    merchant_id = Column(String, ForeignKey("merchants.id"), nullable=False, index=True)
+    merchant_id = Column(String, ForeignKey("merchants.id"), nullable=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     transaction_id = Column(String, ForeignKey("transactions.id"), nullable=True)
     entry_type = Column(String, nullable=False)  # debit, credit
     amount = Column(Numeric(12, 2), nullable=False)

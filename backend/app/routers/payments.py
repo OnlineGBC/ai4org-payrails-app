@@ -38,6 +38,7 @@ def check_balance(
 @router.get("", response_model=PaymentListResponse)
 def get_payments(
     merchant_id: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None, alias="status"),
     rail: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
@@ -45,7 +46,7 @@ def get_payments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return list_payments(db, merchant_id, status_filter, rail, page, page_size)
+    return list_payments(db, merchant_id, user_id, status_filter, rail, page, page_size)
 
 
 @router.get("/{payment_id}", response_model=PaymentResponse)

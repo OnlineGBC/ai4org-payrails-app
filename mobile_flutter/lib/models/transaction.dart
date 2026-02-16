@@ -1,7 +1,9 @@
 class Transaction {
   final String id;
-  final String senderMerchantId;
+  final String? senderMerchantId;
+  final String? senderUserId;
   final String receiverMerchantId;
+  final String? paymentRequestId;
   final double amount;
   final String currency;
   final String? rail;
@@ -14,8 +16,10 @@ class Transaction {
 
   Transaction({
     required this.id,
-    required this.senderMerchantId,
+    this.senderMerchantId,
+    this.senderUserId,
     required this.receiverMerchantId,
+    this.paymentRequestId,
     required this.amount,
     this.currency = 'USD',
     this.rail,
@@ -30,8 +34,10 @@ class Transaction {
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
       id: json['id'] as String,
-      senderMerchantId: json['sender_merchant_id'] as String,
+      senderMerchantId: json['sender_merchant_id'] as String?,
+      senderUserId: json['sender_user_id'] as String?,
       receiverMerchantId: json['receiver_merchant_id'] as String,
+      paymentRequestId: json['payment_request_id'] as String?,
       amount: (json['amount'] is String)
           ? double.parse(json['amount'] as String)
           : (json['amount'] as num).toDouble(),

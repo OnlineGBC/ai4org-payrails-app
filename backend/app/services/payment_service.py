@@ -107,6 +107,7 @@ def get_payment(db: Session, payment_id: str) -> Optional[PaymentResponse]:
 def list_payments(
     db: Session,
     merchant_id: Optional[str] = None,
+    user_id: Optional[str] = None,
     status_filter: Optional[str] = None,
     rail_filter: Optional[str] = None,
     page: int = 1,
@@ -119,6 +120,8 @@ def list_payments(
             (Transaction.sender_merchant_id == merchant_id)
             | (Transaction.receiver_merchant_id == merchant_id)
         )
+    if user_id:
+        query = query.filter(Transaction.sender_user_id == user_id)
     if status_filter:
         query = query.filter(Transaction.status == status_filter)
     if rail_filter:

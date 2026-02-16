@@ -16,6 +16,11 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/qr/qr_generate_screen.dart';
 import '../screens/qr/qr_scan_screen.dart';
 import '../screens/nfc/nfc_pay_screen.dart';
+import '../screens/consumer/consumer_dashboard_screen.dart';
+import '../screens/consumer/consumer_wallet_screen.dart';
+import '../screens/consumer/consumer_pay_confirm_screen.dart';
+import '../screens/merchant/create_payment_request_screen.dart';
+import '../screens/merchant/payment_request_qr_screen.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -31,7 +36,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == RouteNames.register;
 
       if (!isAuth && !isAuthRoute) return RouteNames.login;
-      if (isAuth && isAuthRoute) return RouteNames.dashboard;
+      if (isAuth && isAuthRoute) {
+        // Role-based redirect after login
+        final user = authState.user;
+        if (user != null && user.role == 'user') {
+          return RouteNames.consumerDashboard;
+        }
+        return RouteNames.dashboard;
+      }
       return null;
     },
     errorBuilder: (context, state) => Scaffold(
@@ -58,6 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: RouteNames.register,
         builder: (context, state) => const RegisterScreen(),
       ),
+      // Merchant shell route
       ShellRoute(
         builder: (context, state, child) => ScaffoldWithNav(child: child),
         routes: [
@@ -74,6 +87,44 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SettingsScreen(),
           ),
         ],
+      ),
+      // Consumer shell route
+      ShellRoute(
+        builder: (context, state, child) =>
+            ConsumerScaffoldWithNav(child: child),
+        routes: [
+          GoRoute(
+            path: RouteNames.consumerDashboard,
+            builder: (context, state) => const ConsumerDashboardScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.consumerWallet,
+            builder: (context, state) => const ConsumerWalletScreen(),
+          ),
+          GoRoute(
+            path: RouteNames.consumerSettings,
+            builder: (context, state) => const SettingsScreen(),
+          ),
+        ],
+      ),
+      // Standalone routes
+      GoRoute(
+        path: RouteNames.consumerPayConfirm,
+        builder: (context, state) => ConsumerPayConfirmScreen(
+          requestId: state.uri.queryParameters['requestId'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.merchantCreatePaymentRequest,
+        builder: (context, state) => const CreatePaymentRequestScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.merchantPaymentRequestQr,
+        builder: (context, state) => PaymentRequestQrScreen(
+          requestId: state.uri.queryParameters['requestId'] ?? '',
+          amount: state.uri.queryParameters['amount'] ?? '',
+          description: state.uri.queryParameters['description'] ?? '',
+        ),
       ),
       GoRoute(
         path: RouteNames.sendPayment,
@@ -157,6 +208,47 @@ class ScaffoldWithNav extends StatelessWidget {
   int _getIndex(String location) {
     if (location.startsWith(RouteNames.payments)) return 1;
     if (location.startsWith(RouteNames.settings)) return 2;
+    return 0;
+  }
+}
+
+class ConsumerScaffoldWithNav extends StatelessWidget {
+  final Widget child;
+  const ConsumerScaffoldWithNav({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex:
+            _getIndex(GoRouterState.of(context).matchedLocation),
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 0:
+              context.go(RouteNames.consumerDashboard);
+              break;
+            case 1:
+              context.go(RouteNames.consumerWallet);
+              break;
+            case 2:
+              context.go(RouteNames.consumerSettings);
+              break;
+          }
+        },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(
+              icon: Icon(Icons.account_balance_wallet), label: 'Wallet'),
+          NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
+        ],
+      ),
+    );
+  }
+
+  int _getIndex(String location) {
+    if (location.startsWith(RouteNames.consumerWallet)) return 1;
+    if (location.startsWith(RouteNames.consumerSettings)) return 2;
     return 0;
   }
 }

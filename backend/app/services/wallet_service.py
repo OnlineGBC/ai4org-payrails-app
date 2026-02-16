@@ -1,20 +1,21 @@
 from decimal import Decimal
 from typing import Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 
 from app.models.ledger import Ledger
 
 
 def get_wallet_balance(db: Session, user_id: str) -> Decimal:
-    last_entry = (
-        db.query(Ledger)
-        .filter(Ledger.user_id == user_id)
-        .order_by(Ledger.created_at.desc())
-        .first()
-    )
-    if last_entry:
-        return Decimal(str(last_entry.balance_after))
-    return Decimal("0")
+    result = db.query(
+        func.sum(
+            case(
+                (Ledger.entry_type == "credit", Ledger.amount),
+                else_=-Ledger.amount,
+            )
+        )
+    ).filter(Ledger.user_id == user_id).scalar()
+    return Decimal(str(result)) if result is not None else Decimal("0")
 
 
 def wallet_debit(

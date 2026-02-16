@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StorageService {
@@ -11,24 +12,57 @@ class StorageService {
     ),
   );
 
+  // In-memory fallback for web on HTTP (crypto.subtle unavailable)
+  final Map<String, String> _memoryStore = {};
+  bool? _useMemory;
+
+  Future<bool> _shouldUseMemory() async {
+    if (!kIsWeb) return false;
+    if (_useMemory != null) return _useMemory!;
+    try {
+      await _storage.write(key: '_probe', value: 'ok');
+      await _storage.delete(key: '_probe');
+      _useMemory = false;
+    } catch (_) {
+      _useMemory = true;
+    }
+    return _useMemory!;
+  }
+
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
-    await _storage.write(key: _accessTokenKey, value: accessToken);
-    await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    if (await _shouldUseMemory()) {
+      _memoryStore[_accessTokenKey] = accessToken;
+      _memoryStore[_refreshTokenKey] = refreshToken;
+    } else {
+      await _storage.write(key: _accessTokenKey, value: accessToken);
+      await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    }
   }
 
   Future<String?> getAccessToken() async {
+    if (await _shouldUseMemory()) {
+      return _memoryStore[_accessTokenKey];
+    }
     return await _storage.read(key: _accessTokenKey);
   }
 
   Future<String?> getRefreshToken() async {
+    if (await _shouldUseMemory()) {
+      return _memoryStore[_refreshTokenKey];
+    }
     return await _storage.read(key: _refreshTokenKey);
   }
 
   Future<void> clearTokens() async {
-    await _storage.delete(key: _accessTokenKey);
-    await _storage.delete(key: _refreshTokenKey);
+    if (await _shouldUseMemory()) {
+      _memoryStore.remove(_accessTokenKey);
+      _memoryStore.remove(_refreshTokenKey);
+    } else {
+      await _storage.delete(key: _accessTokenKey);
+      await _storage.delete(key: _refreshTokenKey);
+    }
   }
 }

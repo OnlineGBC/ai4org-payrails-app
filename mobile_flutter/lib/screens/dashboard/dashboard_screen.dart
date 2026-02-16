@@ -137,6 +137,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   children: transactions.take(5).map((txn) {
                     return TransactionTile(
                       transaction: txn,
+                      currentMerchantId: user?.merchantId,
                       onTap: () => context.push('/payments/${txn.id}'),
                     );
                   }).toList(),

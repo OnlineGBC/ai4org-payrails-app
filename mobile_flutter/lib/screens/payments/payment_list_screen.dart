@@ -76,8 +76,10 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final txn = transactions[index];
+              final user = ref.read(authStateProvider).user;
               return TransactionTile(
                 transaction: txn,
+                currentMerchantId: user?.merchantId,
                 onTap: () => context.push('/payments/${txn.id}'),
               );
             },

@@ -10,7 +10,20 @@
       "Bash(flutter pub get:*)",
       "Bash(tasklist:*)",
       "Bash(\"$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe\" devices)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(curl:*)",
+      "Bash(docker exec:*)",
+      "Bash(C:/Users/raja/ai4org_payrails/backend/payrails.app.venv/Scripts/python.exe -m alembic revision --autogenerate -m \"add_b2c2b_models\")",
+      "Bash(C:/Users/raja/ai4org_payrails/backend/payrails.app.venv/Scripts/python.exe -m alembic upgrade head)",
+      "Bash(C:/Users/raja/ai4org_payrails/backend/payrails.app.venv/Scripts/python.exe -m alembic stamp head)",
+      "Bash(C:/Users/raja/ai4org_payrails/backend/payrails.app.venv/Scripts/python.exe:*)",
+      "Bash(__NEW_LINE_6f9794345460e39d__ echo \"\")",
+      "Bash(__NEW_LINE_2a2f3acdfdf1835f__ echo \"...\")",
+      "Bash(docker ps:*)"
     ]
   }
 }

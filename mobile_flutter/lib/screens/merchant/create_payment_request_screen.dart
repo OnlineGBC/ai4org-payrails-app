@@ -64,6 +64,7 @@ class _CreatePaymentRequestScreenState
           '&amount=${request.amount.toStringAsFixed(2)}'
           '&description=${Uri.encodeComponent(request.description ?? '')}',
         );
+        setState(() => _loading = false);
       }
     } catch (e) {
       if (mounted) {

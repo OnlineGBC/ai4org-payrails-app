@@ -19,8 +19,6 @@ import '../screens/nfc/nfc_pay_screen.dart';
 import '../screens/consumer/consumer_dashboard_screen.dart';
 import '../screens/consumer/consumer_wallet_screen.dart';
 import '../screens/consumer/consumer_pay_confirm_screen.dart';
-import '../screens/merchant/create_payment_request_screen.dart';
-import '../screens/merchant/payment_request_qr_screen.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -111,19 +109,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.consumerPayConfirm,
         builder: (context, state) => ConsumerPayConfirmScreen(
-          requestId: state.uri.queryParameters['requestId'] ?? '',
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.merchantCreatePaymentRequest,
-        builder: (context, state) => const CreatePaymentRequestScreen(),
-      ),
-      GoRoute(
-        path: RouteNames.merchantPaymentRequestQr,
-        builder: (context, state) => PaymentRequestQrScreen(
-          requestId: state.uri.queryParameters['requestId'] ?? '',
-          amount: state.uri.queryParameters['amount'] ?? '',
-          description: state.uri.queryParameters['description'] ?? '',
+          merchantId: state.uri.queryParameters['merchantId'] ?? '',
         ),
       ),
       GoRoute(

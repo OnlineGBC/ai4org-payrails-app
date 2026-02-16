@@ -114,10 +114,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () =>
-                    context.push(RouteNames.merchantCreatePaymentRequest),
+                onPressed: () => context.push(RouteNames.qrGenerate),
                 icon: const Icon(Icons.qr_code),
-                label: const Text('Request Pay'),
+                label: const Text('Show my QR and Receive Payment'),
               ),
             ),
             const SizedBox(height: 24),

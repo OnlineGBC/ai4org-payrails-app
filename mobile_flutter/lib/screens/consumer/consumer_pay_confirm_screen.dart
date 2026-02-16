@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/payment_request.dart';
 import '../../providers/consumer_provider.dart';
 import '../../router/route_names.dart';
 import '../../widgets/payrails_app_bar.dart';
 
 class ConsumerPayConfirmScreen extends ConsumerStatefulWidget {
-  final String requestId;
+  final String merchantId;
 
-  const ConsumerPayConfirmScreen({super.key, required this.requestId});
+  const ConsumerPayConfirmScreen({super.key, required this.merchantId});
 
   @override
   ConsumerState<ConsumerPayConfirmScreen> createState() =>
@@ -18,35 +17,49 @@ class ConsumerPayConfirmScreen extends ConsumerStatefulWidget {
 
 class _ConsumerPayConfirmScreenState
     extends ConsumerState<ConsumerPayConfirmScreen> {
-  PaymentRequest? _request;
-  bool _loading = true;
+  final _amountController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  String? _merchantName;
+  bool _loadingMerchant = true;
   bool _paying = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadRequest();
+    _loadMerchant();
   }
 
-  Future<void> _loadRequest() async {
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMerchant() async {
     try {
       final service = ref.read(consumerServiceProvider);
-      final req = await service.getPaymentRequest(widget.requestId);
+      final info = await service.getMerchantInfo(widget.merchantId);
       setState(() {
-        _request = req;
-        _loading = false;
+        _merchantName = info['name'] as String? ?? 'Unknown Merchant';
+        _loadingMerchant = false;
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
-        _loading = false;
+        _error = 'Could not find merchant: ${e.toString()}';
+        _loadingMerchant = false;
       });
     }
   }
 
   Future<void> _confirmPay() async {
-    if (_request == null || _paying) return;
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) {
+      setState(() => _error = 'Enter a valid amount');
+      return;
+    }
+
     setState(() {
       _paying = true;
       _error = null;
@@ -54,12 +67,18 @@ class _ConsumerPayConfirmScreenState
 
     try {
       final service = ref.read(consumerServiceProvider);
-      final result = await service.consumerPay(_request!.id);
+      final description = _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim();
+      final result = await service.consumerPay(
+        widget.merchantId,
+        amount,
+        description: description,
+      );
       final status = result['status'] as String?;
 
       if (mounted) {
         if (status == 'completed') {
-          // Refresh wallet balance
           ref.read(walletBalanceProvider.notifier).load();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Payment successful!')),
@@ -86,15 +105,14 @@ class _ConsumerPayConfirmScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const PayRailsAppBar(title: 'Confirm Payment'),
-      body: _loading
+      appBar: const PayRailsAppBar(title: 'Pay Merchant'),
+      body: _loadingMerchant
           ? const Center(child: CircularProgressIndicator())
-          : _request == null
+          : _merchantName == null && _error != null
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
-                    child: Text(_error ?? 'Payment request not found',
-                        textAlign: TextAlign.center),
+                    child: Text(_error!, textAlign: TextAlign.center),
                   ),
                 )
               : Padding(
@@ -102,41 +120,43 @@ class _ConsumerPayConfirmScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
                       Icon(Icons.store,
                           size: 64,
                           color: Theme.of(context).colorScheme.primary),
                       const SizedBox(height: 16),
                       Text(
-                        _request!.merchantName ?? 'Merchant',
+                        _merchantName ?? 'Merchant',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(height: 8),
-                      if (_request!.description != null)
-                        Text(
-                          _request!.description!,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 4),
                       Text(
-                        '\$${_request!.amount.toStringAsFixed(2)}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .displaySmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        'ID: ${widget.merchantId}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                            ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(_request!.currency,
-                          style: Theme.of(context).textTheme.bodySmall),
-                      if (_request!.status != 'pending') ...[
-                        const SizedBox(height: 16),
-                        Chip(
-                          label: Text(
-                              'Status: ${_request!.status.toUpperCase()}'),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.errorContainer,
+                      const SizedBox(height: 32),
+                      TextField(
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Amount',
+                          prefixText: '\$ ',
+                          border: OutlineInputBorder(),
                         ),
-                      ],
+                        autofocus: true,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Description (optional)',
+                          hintText: 'e.g. Coffee order',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
                       const Spacer(),
                       if (_error != null)
                         Padding(
@@ -148,26 +168,24 @@ class _ConsumerPayConfirmScreenState
                             textAlign: TextAlign.center,
                           ),
                         ),
-                      if (_request!.status == 'pending')
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: _paying ? null : _confirmPay,
-                            style: ElevatedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: _paying
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  )
-                                : const Text('Confirm Payment',
-                                    style: TextStyle(fontSize: 18)),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _paying ? null : _confirmPay,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
+                          child: _paying
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : const Text('Confirm Payment',
+                                  style: TextStyle(fontSize: 18)),
                         ),
+                      ),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => context.pop(),

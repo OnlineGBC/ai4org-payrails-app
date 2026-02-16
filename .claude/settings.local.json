@@ -23,7 +23,8 @@
       "Bash(C:/Users/raja/ai4org_payrails/backend/payrails.app.venv/Scripts/python.exe:*)",
       "Bash(__NEW_LINE_6f9794345460e39d__ echo \"\")",
       "Bash(__NEW_LINE_2a2f3acdfdf1835f__ echo \"...\")",
-      "Bash(docker ps:*)"
+      "Bash(docker ps:*)",
+      "Bash(\"payrails.app.venv/Scripts/python.exe\" -m alembic stamp head)"
     ]
   }
 }

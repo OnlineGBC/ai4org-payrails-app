@@ -5,7 +5,6 @@ from app.models.bank_account import BankAccount
 from app.models.ledger import Ledger
 from app.models.bank_config import BankConfig
 from app.models.event_log import EventLog
-from app.models.payment_request import PaymentRequest
 
 __all__ = [
     "User",
@@ -15,5 +14,4 @@ __all__ = [
     "Ledger",
     "BankConfig",
     "EventLog",
-    "PaymentRequest",
 ]

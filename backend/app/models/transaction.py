@@ -10,7 +10,6 @@ class Transaction(Base):
     sender_merchant_id = Column(String, nullable=True, index=True)
     sender_user_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     receiver_merchant_id = Column(String, nullable=False, index=True)
-    payment_request_id = Column(String, ForeignKey("payment_requests.id"), nullable=True, index=True)
     sender_bank_account_id = Column(String, nullable=True)
     receiver_bank_account_id = Column(String, nullable=True)
     amount = Column(Numeric(12, 2), nullable=False)

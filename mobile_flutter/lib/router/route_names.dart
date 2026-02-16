@@ -17,6 +17,4 @@ class RouteNames {
   static const String consumerPayConfirm = '/consumer/pay-confirm';
   static const String consumerWallet = '/consumer/wallet';
   static const String consumerSettings = '/consumer/settings';
-  static const String merchantCreatePaymentRequest = '/merchant/create-payment-request';
-  static const String merchantPaymentRequestQr = '/merchant/payment-request-qr';
 }

@@ -23,43 +23,34 @@ class _QrScanScreenState extends State<QrScanScreen> {
     super.dispose();
   }
 
+  void _navigateToPayConfirm(String merchantId) {
+    context.push(
+      '${RouteNames.consumerPayConfirm}?merchantId=$merchantId',
+    );
+  }
+
   void _handleQrData(String data) {
     final uri = Uri.tryParse(data);
 
-    if (uri != null && uri.scheme == 'payrails') {
-      if (uri.host == 'pay-request') {
-        final requestId = uri.queryParameters['id'];
-        if (requestId != null) {
-          context.push(
-            '${RouteNames.consumerPayConfirm}?requestId=$requestId',
-          );
-          return;
-        }
-      } else if (uri.host == 'pay') {
-        final merchantId = uri.queryParameters['merchant'];
-        if (merchantId != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Merchant found: $merchantId')),
-          );
-          context.pushReplacement(RouteNames.sendPayment);
-          return;
-        }
+    if (uri != null && uri.scheme == 'payrails' && uri.host == 'pay') {
+      final merchantId = uri.queryParameters['merchant'];
+      if (merchantId != null) {
+        _navigateToPayConfirm(merchantId);
+        return;
       }
     }
 
-    // Also accept a bare UUID (payment request ID)
+    // Also accept a bare merchant ID (UUID)
     final uuidPattern = RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
     );
     if (uuidPattern.hasMatch(data.trim())) {
-      context.push(
-        '${RouteNames.consumerPayConfirm}?requestId=${data.trim()}',
-      );
+      _navigateToPayConfirm(data.trim());
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Invalid QR code or payment request ID')),
+      const SnackBar(content: Text('Invalid QR code or Merchant ID')),
     );
     setState(() => _scanned = false);
   }
@@ -91,7 +82,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
           Text(
             'Camera is not available.\n'
             'On web, camera requires HTTPS.\n'
-            'You can enter the Payment Request ID manually.',
+            'You can enter the Merchant ID manually.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
@@ -99,8 +90,8 @@ class _QrScanScreenState extends State<QrScanScreen> {
           TextField(
             controller: _manualController,
             decoration: const InputDecoration(
-              labelText: 'Payment Request ID',
-              hintText: 'Paste the ID from the merchant',
+              labelText: 'Merchant ID',
+              hintText: 'Paste the Merchant ID',
               border: OutlineInputBorder(),
             ),
             onSubmitted: (_) => _submitManualId(),
@@ -146,7 +137,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
                   right: 24,
                   child: TextButton(
                     onPressed: () => setState(() => _cameraError = true),
-                    child: const Text('Enter ID manually instead'),
+                    child: const Text('Enter Merchant ID manually instead'),
                   ),
                 ),
               ],

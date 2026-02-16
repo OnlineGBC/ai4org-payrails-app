@@ -1,5 +1,4 @@
 import 'package:uuid/uuid.dart';
-import '../models/payment_request.dart';
 import '../models/wallet_balance.dart';
 import '../models/transaction.dart';
 import 'api_client.dart';
@@ -9,34 +8,23 @@ class ConsumerService {
 
   ConsumerService(this._api);
 
-  Future<PaymentRequest> createPaymentRequest(
-    String merchantId,
-    double amount,
-    String? description,
-  ) async {
-    final response = await _api.post(
-      '/merchants/$merchantId/payment-requests',
-      data: {
-        'amount': amount.toString(),
-        'description': description,
-      },
-    );
-    return PaymentRequest.fromJson(response.data);
-  }
-
-  Future<PaymentRequest> getPaymentRequest(String requestId) async {
-    final response = await _api.get('/payment-requests/$requestId');
-    return PaymentRequest.fromJson(response.data);
+  Future<Map<String, dynamic>> getMerchantInfo(String merchantId) async {
+    final response = await _api.get('/merchants/$merchantId/status');
+    return response.data as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> consumerPay(
-    String paymentRequestId, {
+    String merchantId,
+    double amount, {
+    String? description,
     String? preferredRail,
   }) async {
     final idempotencyKey = const Uuid().v4();
     final response = await _api.post('/consumer/pay', data: {
-      'payment_request_id': paymentRequestId,
+      'merchant_id': merchantId,
+      'amount': amount.toString(),
       'idempotency_key': idempotencyKey,
+      if (description != null) 'description': description,
       if (preferredRail != null) 'preferred_rail': preferredRail,
     });
     return response.data as Map<String, dynamic>;

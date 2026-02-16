@@ -10,9 +10,9 @@ class ApiConfig {
     // For local dev without Docker, set API_BASE_URL=http://localhost:8000
     if (kIsWeb) return '';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000';
+      return 'http://192.168.1.88:8080';
     }
-    return 'http://localhost:8000';
+    return 'http://192.168.1.88:8080';
   }
 
   // Auth

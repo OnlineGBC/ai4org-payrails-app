@@ -3,7 +3,7 @@
 # ============================================================
 FROM ghcr.io/cirruslabs/flutter:stable AS flutter-build
 
-ARG APK_API_URL=http://10.0.2.2:8000
+ARG APK_API_URL=http://192.168.1.88:8080
 
 WORKDIR /app
 COPY mobile_flutter/ ./mobile_flutter/

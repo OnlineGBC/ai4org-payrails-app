@@ -107,7 +107,7 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
               child: Column(
                 children: [
                   _detailRow('Transaction ID', txn.id),
-                  _detailRow('Sender', txn.senderMerchantId),
+                  _detailRow('Sender', txn.senderMerchantId ?? txn.senderUserId ?? '—'),
                   _detailRow('Receiver', txn.receiverMerchantId),
                   _detailRow('Rail', ''),
                   if (txn.rail != null)

@@ -20,6 +20,7 @@ class _ConsumerPayConfirmScreenState
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   String? _merchantName;
+  String? _selectedRail;
   bool _loadingMerchant = true;
   bool _paying = false;
   String? _error;
@@ -74,6 +75,7 @@ class _ConsumerPayConfirmScreenState
         widget.merchantId,
         amount,
         description: description,
+        preferredRail: _selectedRail,
       );
       final status = result['status'] as String?;
 
@@ -156,6 +158,23 @@ class _ConsumerPayConfirmScreenState
                           hintText: 'e.g. Coffee order',
                           border: OutlineInputBorder(),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedRail,
+                        decoration: const InputDecoration(
+                          labelText: 'Preferred Rail (optional)',
+                          prefixIcon: Icon(Icons.route),
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: null, child: Text('Auto-select')),
+                          DropdownMenuItem(value: 'fednow', child: Text('FedNow (1.25% discount)')),
+                          DropdownMenuItem(value: 'rtp', child: Text('RTP (1.25% discount)')),
+                          DropdownMenuItem(value: 'ach', child: Text('ACH')),
+                          DropdownMenuItem(value: 'card', child: Text('Card')),
+                        ],
+                        onChanged: (v) => setState(() => _selectedRail = v),
                       ),
                       const Spacer(),
                       if (_error != null)

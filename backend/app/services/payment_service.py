@@ -85,8 +85,13 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
 
     # If completed, create ledger entries
     if result.status == "completed":
-        record_debit(db, payload.sender_merchant_id, payload.amount, txn.id, "Payment sent")
-        record_credit(db, payload.receiver_merchant_id, payload.amount, txn.id, "Payment received")
+        # 1.25% discount for FedNow/RTP rails
+        if rail in ("fednow", "rtp"):
+            settled_amount = (payload.amount * Decimal("0.9875")).quantize(Decimal("0.01"))
+        else:
+            settled_amount = payload.amount
+        record_debit(db, payload.sender_merchant_id, settled_amount, txn.id, "Payment sent")
+        record_credit(db, payload.receiver_merchant_id, settled_amount, txn.id, "Payment received")
         log_event(db, "payment.completed", "payment_service", txn.id)
     elif result.status == "failed":
         log_event(db, "payment.failed", "payment_service", txn.id, {

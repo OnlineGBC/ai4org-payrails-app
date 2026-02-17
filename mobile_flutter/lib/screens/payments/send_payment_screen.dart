@@ -112,8 +112,8 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
                   ),
                   items: const [
                     DropdownMenuItem(value: null, child: Text('Auto-select')),
-                    DropdownMenuItem(value: 'fednow', child: Text('FedNow')),
-                    DropdownMenuItem(value: 'rtp', child: Text('RTP')),
+                    DropdownMenuItem(value: 'fednow', child: Text('FedNow (1.25% discount)')),
+                    DropdownMenuItem(value: 'rtp', child: Text('RTP (1.25% discount)')),
                     DropdownMenuItem(value: 'ach', child: Text('ACH')),
                     DropdownMenuItem(value: 'card', child: Text('Card')),
                   ],

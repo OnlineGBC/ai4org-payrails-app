@@ -91,9 +91,14 @@ def consumer_pay(
 
     # If completed, update ledger entries
     if result.status == "completed":
+        # 1.25% discount for FedNow/RTP rails
+        if rail in ("fednow", "rtp"):
+            settled_amount = (amount * Decimal("0.9875")).quantize(Decimal("0.01"))
+        else:
+            settled_amount = amount
         desc = description or f"Payment to {merchant.name}"
-        wallet_debit(db, user_id, amount, txn.id, desc)
-        record_credit(db, merchant_id, amount, txn.id, f"Payment from consumer {user_id}")
+        wallet_debit(db, user_id, settled_amount, txn.id, desc)
+        record_credit(db, merchant_id, settled_amount, txn.id, f"Payment from consumer {user_id}")
         db.commit()
         log_event(db, "consumer_payment.completed", "consumer_payment_service", txn.id)
     elif result.status == "failed":

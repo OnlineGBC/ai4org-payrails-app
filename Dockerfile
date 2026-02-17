@@ -13,8 +13,8 @@ WORKDIR /app/mobile_flutter
 # Get dependencies
 RUN flutter pub get
 
-# Build web with "/" base URL (relative paths, nginx proxies to backend)
-RUN flutter build web --dart-define=API_BASE_URL=/
+# Build web with relative base URL (nginx proxies to backend)
+RUN flutter build web --dart-define=API_BASE_URL=relative
 
 # Build APK with configurable backend URL
 RUN flutter build apk --release --dart-define=API_BASE_URL=$APK_API_URL

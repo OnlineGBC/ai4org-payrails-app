@@ -25,7 +25,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final notifier = ref.read(authChangeNotifierProvider);
 
   return GoRouter(
-    initialLocation: RouteNames.dashboard,
+    initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);

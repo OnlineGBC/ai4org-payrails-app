@@ -4,9 +4,11 @@ class ApiConfig {
   static String get baseUrl {
     // Compile-time override takes priority
     const envUrl = String.fromEnvironment('API_BASE_URL');
+    // Docker/Cloud Run passes 'relative' to use same-origin (nginx proxy)
+    if (envUrl == 'relative') return '';
     if (envUrl.isNotEmpty) return envUrl;
 
-    // Web: default to local uvicorn for dev; Docker/Cloud Run override via API_BASE_URL=/
+    // Web: default to local uvicorn for dev
     if (kIsWeb) return 'http://localhost:8000';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://192.168.1.88:8080';

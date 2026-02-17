@@ -90,6 +90,8 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
             settled_amount = (payload.amount * Decimal("0.9875")).quantize(Decimal("0.01"))
         else:
             settled_amount = payload.amount
+        txn.amount = settled_amount
+        db.commit()
         record_debit(db, payload.sender_merchant_id, settled_amount, txn.id, "Payment sent")
         record_credit(db, payload.receiver_merchant_id, settled_amount, txn.id, "Payment received")
         log_event(db, "payment.completed", "payment_service", txn.id)

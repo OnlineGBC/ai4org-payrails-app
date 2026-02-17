@@ -6,9 +6,8 @@ class ApiConfig {
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
 
-    // Web: empty string → relative URLs (nginx proxies to backend)
-    // For local dev without Docker, set API_BASE_URL=http://localhost:8000
-    if (kIsWeb) return '';
+    // Web: default to local uvicorn for dev; Docker/Cloud Run override via API_BASE_URL=/
+    if (kIsWeb) return 'http://localhost:8000';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://192.168.1.88:8080';
     }

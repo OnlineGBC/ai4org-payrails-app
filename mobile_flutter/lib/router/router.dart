@@ -29,13 +29,29 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: notifier,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
-      final isAuth = authState.status == AuthStatus.authenticated;
       final isAuthRoute = state.matchedLocation == RouteNames.login ||
           state.matchedLocation == RouteNames.register;
+
+      // Still checking stored token — don't redirect anywhere yet
+      if (authState.status == AuthStatus.unknown) {
+        // If already on login/register, stay there; otherwise go to splash
+        if (isAuthRoute) return null;
+        return '/splash';
+      }
+
+      final isAuth = authState.status == AuthStatus.authenticated;
 
       if (!isAuth && !isAuthRoute) return RouteNames.login;
       if (isAuth && isAuthRoute) {
         // Role-based redirect after login
+        final user = authState.user;
+        if (user != null && user.role == 'user') {
+          return RouteNames.consumerDashboard;
+        }
+        return RouteNames.dashboard;
+      }
+      // If authenticated and on splash, redirect to correct dashboard
+      if (isAuth && state.matchedLocation == '/splash') {
         final user = authState.user;
         if (user != null && user.role == 'user') {
           return RouteNames.consumerDashboard;
@@ -60,6 +76,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ),
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
       GoRoute(
         path: RouteNames.login,
         builder: (context, state) => const LoginScreen(),

@@ -96,6 +96,8 @@ def consumer_pay(
             settled_amount = (amount * Decimal("0.9875")).quantize(Decimal("0.01"))
         else:
             settled_amount = amount
+        txn.amount = settled_amount
+        db.commit()
         desc = description or f"Payment to {merchant.name}"
         wallet_debit(db, user_id, settled_amount, txn.id, desc)
         record_credit(db, merchant_id, settled_amount, txn.id, f"Payment from consumer {user_id}")

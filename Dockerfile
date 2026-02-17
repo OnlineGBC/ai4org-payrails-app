@@ -23,7 +23,7 @@ RUN flutter build apk --release --dart-define=API_BASE_URL=$APK_API_URL
 # Stage 2: APK export (extract with: docker build --target apk-export -o out .)
 # ============================================================
 FROM scratch AS apk-export
-COPY --from=flutter-build /app/mobile_flutter/build/app/outputs/flutter-apk/app-release.apk /app-release.apk
+COPY --from=flutter-build /app/mobile_flutter/build/app/outputs/flutter-apk/app-release.apk /FedNowRTP_Payrails.apk
 
 # ============================================================
 # Stage 3: Runtime — Python + nginx serving web + API

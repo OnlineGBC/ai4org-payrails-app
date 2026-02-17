@@ -21,10 +21,10 @@ def seed():
 
     try:
         # BankConfig
-        if not db.query(BankConfig).first():
+        if not db.query(BankConfig).filter(BankConfig.id == "bank-config-001").first():
             bc = BankConfig(
                 id="bank-config-001",
-                bank_name="MockBank",
+                bank_name="Pinnacle BankTest",
                 supported_rails="fednow,rtp,ach,card",
                 fednow_limit=Decimal("500000"),
                 rtp_limit=Decimal("1000000"),
@@ -33,7 +33,21 @@ def seed():
             )
             db.add(bc)
             db.commit()
-            print("Created BankConfig: MockBank")
+            print("Created BankConfig: Pinnacle BankTest")
+
+        if not db.query(BankConfig).filter(BankConfig.id == "bank-config-002").first():
+            bc2 = BankConfig(
+                id="bank-config-002",
+                bank_name="American BankTest",
+                supported_rails="fednow,rtp,ach,card",
+                fednow_limit=Decimal("500000"),
+                rtp_limit=Decimal("1000000"),
+                ach_limit=Decimal("10000000"),
+                is_active=True,
+            )
+            db.add(bc2)
+            db.commit()
+            print("Created BankConfig: American BankTest")
 
         # Merchants
         m1 = db.query(Merchant).filter(Merchant.id == "merchant-001").first()
@@ -97,7 +111,7 @@ def seed():
             ba1 = BankAccount(
                 id="bank-acct-001",
                 merchant_id="merchant-001",
-                bank_name="MockBank",
+                bank_name="Pinnacle BankTest",
                 routing_number="021000021",
                 encrypted_account_number=encrypt_value("1234567890"),
                 account_type="checking",
@@ -112,8 +126,8 @@ def seed():
             ba2 = BankAccount(
                 id="bank-acct-002",
                 merchant_id="merchant-002",
-                bank_name="MockBank",
-                routing_number="021000021",
+                bank_name="American BankTest",
+                routing_number="071000013",
                 encrypted_account_number=encrypt_value("0987654321"),
                 account_type="checking",
                 verification_status="verified",

@@ -40,12 +40,10 @@ class _QrScanScreenState extends State<QrScanScreen> {
       }
     }
 
-    // Also accept a bare merchant ID (UUID)
-    final uuidPattern = RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-    );
-    if (uuidPattern.hasMatch(data.trim())) {
-      _navigateToPayConfirm(data.trim());
+    // Accept any non-empty string as a bare merchant ID
+    final trimmed = data.trim();
+    if (trimmed.isNotEmpty) {
+      _navigateToPayConfirm(trimmed);
       return;
     }
 

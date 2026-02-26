@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -79,7 +78,6 @@ class _QrScanScreenState extends State<QrScanScreen> {
           const SizedBox(height: 16),
           Text(
             'Camera is not available.\n'
-            'On web, camera requires HTTPS.\n'
             'You can enter the Merchant ID manually.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
@@ -110,7 +108,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final showManualEntry = kIsWeb || _cameraError;
+    final showManualEntry = _cameraError;
 
     return Scaffold(
       appBar: const PayRailsAppBar(title: 'Scan QR Code'),

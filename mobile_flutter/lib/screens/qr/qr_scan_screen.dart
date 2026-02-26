@@ -131,9 +131,22 @@ class _QrScanScreenState extends State<QrScanScreen> {
                   bottom: 24,
                   left: 24,
                   right: 24,
-                  child: TextButton(
+                  child: ElevatedButton.icon(
                     onPressed: () => setState(() => _cameraError = true),
-                    child: const Text('Enter Merchant ID manually instead'),
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text(
+                      'Enter Merchant ID manually instead',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                      elevation: 6,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -15,6 +15,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
   bool _scanned = false;
   final _manualController = TextEditingController();
   bool _cameraError = false;
+  String? _scannedId;
 
   @override
   void dispose() {
@@ -45,55 +46,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
       return;
     }
 
-    final resolvedId = merchantId;
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('QR Code Scanned',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text('Merchant ID:', style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text(resolvedId,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w500,
-                    fontFamily: 'monospace')),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      setState(() => _scanned = false);
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _navigateToPayConfirm(resolvedId);
-                    },
-                    child: const Text('Proceed'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ).whenComplete(() => setState(() => _scanned = false));
+    setState(() => _scannedId = merchantId);
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -109,6 +62,64 @@ class _QrScanScreenState extends State<QrScanScreen> {
     final text = _manualController.text.trim();
     if (text.isEmpty) return;
     _handleQrData(text);
+  }
+
+  void _cancelScan() {
+    setState(() {
+      _scannedId = null;
+      _scanned = false;
+    });
+  }
+
+  Widget _buildConfirmation(String merchantId) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.qr_code_scanner, size: 64, color: Colors.blue),
+          const SizedBox(height: 24),
+          const Text('QR Code Scanned',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          const Text('Merchant ID:', style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 4),
+          Text(
+            merchantId,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'monospace',
+            ),
+          ),
+          const SizedBox(height: 40),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _cancelScan,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _navigateToPayConfirm(merchantId),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Proceed'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildManualEntry() {
@@ -152,6 +163,13 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_scannedId != null) {
+      return Scaffold(
+        appBar: const PayRailsAppBar(title: 'Confirm Merchant'),
+        body: _buildConfirmation(_scannedId!),
+      );
+    }
+
     final showManualEntry = _cameraError;
 
     return Scaffold(

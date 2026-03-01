@@ -115,6 +115,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: () => context.go(RouteNames.register),
                         child: const Text("Don't have an account? Register"),
                       ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          border: Border.all(color: Colors.amber.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          '⚠️  MVP Demo Environment — All transactions are simulated.\n'
+                          'Do not enter real personal or financial information.',
+                          style: TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ],
                   ),
                 ),

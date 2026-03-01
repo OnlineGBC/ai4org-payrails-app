@@ -16,6 +16,7 @@ class UserLogin(BaseModel):
 
 
 class UserUpdate(BaseModel):
+    email: Optional[str] = None
     phone: Optional[str] = None
 
 

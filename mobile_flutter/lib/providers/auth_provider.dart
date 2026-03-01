@@ -98,6 +98,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(user: user);
   }
 
+  Future<void> updateEmail(String email) async {
+    final user = await _authService.updateEmail(email);
+    state = state.copyWith(user: user);
+  }
+
   Future<void> logout() async {
     try {
       await _authService.logout();

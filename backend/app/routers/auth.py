@@ -80,6 +80,13 @@ def update_me(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if payload.email is not None:
+        new_email = payload.email.strip().lower()
+        if new_email and new_email != current_user.email:
+            taken = db.query(User).filter(User.email == new_email, User.id != current_user.id).first()
+            if taken:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
+            current_user.email = new_email
     if payload.phone is not None:
         current_user.phone = payload.phone.strip() or None
     db.commit()

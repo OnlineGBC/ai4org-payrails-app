@@ -49,4 +49,9 @@ class AuthService {
     final response = await _api.patch(ApiConfig.me, data: {'phone': phone});
     return User.fromJson(response.data);
   }
+
+  Future<User> updateEmail(String email) async {
+    final response = await _api.patch(ApiConfig.me, data: {'email': email});
+    return User.fromJson(response.data);
+  }
 }

@@ -15,11 +15,16 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    phone: Optional[str] = None
+
+
 class UserResponse(BaseModel):
     id: str
     email: str
     role: str
     merchant_id: Optional[str] = None
+    phone: Optional[str] = None
     created_at: Optional[datetime] = None
 
     class Config:

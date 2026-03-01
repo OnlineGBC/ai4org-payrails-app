@@ -44,4 +44,9 @@ class AuthService {
     final token = await _storage.getAccessToken();
     return token != null;
   }
+
+  Future<User> updatePhone(String phone) async {
+    final response = await _api.patch(ApiConfig.me, data: {'phone': phone});
+    return User.fromJson(response.data);
+  }
 }

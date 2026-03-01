@@ -19,6 +19,7 @@ import '../screens/nfc/nfc_pay_screen.dart';
 import '../screens/consumer/consumer_dashboard_screen.dart';
 import '../screens/consumer/consumer_wallet_screen.dart';
 import '../screens/consumer/consumer_pay_confirm_screen.dart';
+import '../screens/consumer/consumer_settings_screen.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -123,7 +124,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: RouteNames.consumerSettings,
-            builder: (context, state) => const SettingsScreen(),
+            builder: (context, state) => const ConsumerSettingsScreen(),
           ),
         ],
       ),

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
-import '../../router/route_names.dart';
 import '../../widgets/payrails_app_bar.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({super.key});
+class ConsumerSettingsScreen extends ConsumerStatefulWidget {
+  const ConsumerSettingsScreen({super.key});
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<ConsumerSettingsScreen> createState() =>
+      _ConsumerSettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _ConsumerSettingsScreenState
+    extends ConsumerState<ConsumerSettingsScreen> {
   late final TextEditingController _phoneController;
   bool _savingPhone = false;
   String? _phoneError;
@@ -38,7 +38,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _phoneSuccess = null;
     });
     try {
-      await ref.read(authStateProvider.notifier).updatePhone(_phoneController.text.trim());
+      await ref
+          .read(authStateProvider.notifier)
+          .updatePhone(_phoneController.text.trim());
       if (mounted) setState(() => _phoneSuccess = 'Phone number saved.');
     } catch (e) {
       if (mounted) setState(() => _phoneError = 'Failed to save: $e');
@@ -63,21 +65,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Account', style: Theme.of(context).textTheme.titleMedium),
+                  Text('Account',
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
                   ListTile(
                     leading: const Icon(Icons.email),
                     title: Text(user?.email ?? 'Not logged in'),
-                    subtitle: Text('Role: ${user?.role ?? 'unknown'}'),
+                    subtitle: const Text('Consumer account'),
                   ),
-                  if (user?.merchantId != null)
-                    ListTile(
-                      leading: const Icon(Icons.business),
-                      title: const Text('Merchant'),
-                      subtitle: Text(user!.merchantId!),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.push(RouteNames.merchant),
-                    ),
                 ],
               ),
             ),
@@ -91,10 +86,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('SMS Notifications', style: Theme.of(context).textTheme.titleMedium),
+                  Text('SMS Notifications',
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 4),
                   Text(
-                    'Enter your mobile number to receive SMS alerts on transactions.',
+                    'Enter your mobile number to receive SMS alerts when payments complete.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
@@ -111,14 +107,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   if (_phoneError != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(_phoneError!,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+                      child: Text(
+                        _phoneError!,
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                            fontSize: 12),
+                      ),
                     ),
                   if (_phoneSuccess != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
-                      child: Text(_phoneSuccess!,
-                          style: const TextStyle(color: Colors.green, fontSize: 12)),
+                      child: Text(
+                        _phoneSuccess!,
+                        style: const TextStyle(color: Colors.green, fontSize: 12),
+                      ),
                     ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -126,8 +128,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: ElevatedButton(
                       onPressed: _savingPhone ? null : _savePhone,
                       child: _savingPhone
-                          ? const SizedBox(height: 18, width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Save Phone Number'),
                     ),
                   ),
@@ -135,36 +140,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Other links
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.account_balance),
-                  title: const Text('Bank Accounts'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(RouteNames.bankAccounts),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.qr_code),
-                  title: const Text('QR Payment'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(RouteNames.qrGenerate),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.nfc),
-                  title: const Text('NFC Payment'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(RouteNames.nfcPay),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 24),
+
           ElevatedButton.icon(
             onPressed: () => ref.read(authStateProvider.notifier).logout(),
             icon: const Icon(Icons.logout),

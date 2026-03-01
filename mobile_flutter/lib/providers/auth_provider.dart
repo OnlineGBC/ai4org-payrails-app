@@ -93,6 +93,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> updatePhone(String phone) async {
+    final user = await _authService.updatePhone(phone);
+    state = state.copyWith(user: user);
+  }
+
   Future<void> logout() async {
     try {
       await _authService.logout();

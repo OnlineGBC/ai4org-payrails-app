@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate, TokenResponse
 from app.services.auth_service import (
     hash_password,
     verify_password,
@@ -71,4 +71,17 @@ def refresh(refresh_token: str, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    payload: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if payload.phone is not None:
+        current_user.phone = payload.phone.strip() or None
+    db.commit()
+    db.refresh(current_user)
     return current_user

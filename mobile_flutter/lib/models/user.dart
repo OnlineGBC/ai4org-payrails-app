@@ -3,6 +3,7 @@ class User {
   final String email;
   final String role;
   final String? merchantId;
+  final String? phone;
   final DateTime? createdAt;
 
   User({
@@ -10,6 +11,7 @@ class User {
     required this.email,
     required this.role,
     this.merchantId,
+    this.phone,
     this.createdAt,
   });
 
@@ -19,6 +21,7 @@ class User {
       email: json['email'] as String,
       role: json['role'] as String,
       merchantId: json['merchant_id'] as String?,
+      phone: json['phone'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,

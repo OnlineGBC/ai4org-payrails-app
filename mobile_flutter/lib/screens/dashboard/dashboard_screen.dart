@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/balance_provider.dart';
 import '../../providers/payment_provider.dart';
@@ -70,7 +71,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     balanceState.when(
                       data: (b) => Text(
                         b != null
-                            ? '\$${b.balance.toStringAsFixed(2)}'
+                            ? '\$${NumberFormat('#,##0.00').format(b.balance)}'
                             : '\$0.00',
                         style: Theme.of(context)
                             .textTheme

@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../providers/merchant_provider.dart';
 import '../../router/route_names.dart';
 import '../../widgets/payrails_app_bar.dart';
 
-class QrScanScreen extends StatefulWidget {
+class QrScanScreen extends ConsumerStatefulWidget {
   const QrScanScreen({super.key});
 
   @override
-  State<QrScanScreen> createState() => _QrScanScreenState();
+  ConsumerState<QrScanScreen> createState() => _QrScanScreenState();
 }
 
-class _QrScanScreenState extends State<QrScanScreen> {
+class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   bool _scanned = false;
   final _manualController = TextEditingController();
   bool _cameraError = false;
   String? _scannedId;
+  String? _merchantName;
+  bool _lookingUpMerchant = false;
 
   @override
   void dispose() {
@@ -29,7 +33,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
     );
   }
 
-  void _handleQrData(String data) {
+  Future<void> _handleQrData(String data) async {
     final uri = Uri.tryParse(data);
 
     String? merchantId;
@@ -46,7 +50,20 @@ class _QrScanScreenState extends State<QrScanScreen> {
       return;
     }
 
-    setState(() => _scannedId = merchantId);
+    setState(() {
+      _scannedId = merchantId;
+      _lookingUpMerchant = true;
+      _merchantName = null;
+    });
+
+    try {
+      final merchant = await ref.read(merchantServiceProvider).getMerchant(merchantId!);
+      if (mounted) setState(() => _merchantName = merchant.name);
+    } catch (_) {
+      // Name lookup failed — confirmation panel still shows just the ID
+    } finally {
+      if (mounted) setState(() => _lookingUpMerchant = false);
+    }
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -68,6 +85,8 @@ class _QrScanScreenState extends State<QrScanScreen> {
     setState(() {
       _scannedId = null;
       _scanned = false;
+      _merchantName = null;
+      _lookingUpMerchant = false;
     });
   }
 
@@ -121,6 +140,21 @@ class _QrScanScreenState extends State<QrScanScreen> {
                 fontFamily: 'monospace',
               ),
             ),
+            const SizedBox(height: 10),
+            if (_lookingUpMerchant)
+              const SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (_merchantName != null) ...[
+              const Text('Merchant Name', style: TextStyle(color: Colors.grey, fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(
+                _merchantName!,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               children: [
@@ -198,6 +232,21 @@ class _QrScanScreenState extends State<QrScanScreen> {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'monospace')),
+            const SizedBox(height: 8),
+            if (_lookingUpMerchant)
+              const SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (_merchantName != null) ...[
+              const Text('Merchant Name',
+                  style: TextStyle(color: Colors.grey, fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(_merchantName!,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [

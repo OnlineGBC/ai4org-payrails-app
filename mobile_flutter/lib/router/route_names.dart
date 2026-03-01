@@ -17,4 +17,6 @@ class RouteNames {
   static const String consumerPayConfirm = '/consumer/pay-confirm';
   static const String consumerWallet = '/consumer/wallet';
   static const String consumerSettings = '/consumer/settings';
+  static const String consumerQr = '/consumer/qr';
+  static const String consumerReceiveConfirm = '/consumer/receive-confirm';
 }

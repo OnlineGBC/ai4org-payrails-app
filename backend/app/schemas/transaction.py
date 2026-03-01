@@ -19,7 +19,8 @@ class PaymentResponse(BaseModel):
     id: str
     sender_merchant_id: Optional[str] = None
     sender_user_id: Optional[str] = None
-    receiver_merchant_id: str
+    receiver_merchant_id: Optional[str] = None
+    receiver_user_id: Optional[str] = None
     amount: Decimal
     currency: str
     rail: Optional[str] = None

@@ -145,7 +145,10 @@ def list_payments(
             | (Transaction.receiver_merchant_id == merchant_id)
         )
     if user_id:
-        query = query.filter(Transaction.sender_user_id == user_id)
+        query = query.filter(
+            (Transaction.sender_user_id == user_id)
+            | (Transaction.receiver_user_id == user_id)
+        )
     if status_filter:
         query = query.filter(Transaction.status == status_filter)
     if rail_filter:

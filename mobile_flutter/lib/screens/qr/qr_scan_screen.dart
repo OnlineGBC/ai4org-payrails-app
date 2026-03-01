@@ -50,6 +50,22 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
       return;
     }
 
+    // Consumer receive QR: payrails://receive?user=...
+    if (uri != null && uri.scheme == 'payrails' && uri.host == 'receive') {
+      final receiverUserId = uri.queryParameters['user'];
+      final receiverName = uri.queryParameters['name'] ?? receiverUserId ?? '';
+      if (receiverUserId != null) {
+        if (mounted) {
+          context.push(
+            '${RouteNames.consumerReceiveConfirm}'
+            '?userId=${Uri.encodeComponent(receiverUserId)}'
+            '&name=${Uri.encodeComponent(receiverName)}',
+          );
+        }
+        return;
+      }
+    }
+
     setState(() {
       _scannedId = merchantId;
       _lookingUpMerchant = true;

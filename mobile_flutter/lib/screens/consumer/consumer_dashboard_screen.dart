@@ -79,16 +79,24 @@ class _ConsumerDashboardScreenState
             const SizedBox(height: 16),
 
             // Quick actions
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => context.push(RouteNames.qrScan),
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Scan QR to Pay'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push(RouteNames.qrScan),
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('Scan QR to Pay'),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push(RouteNames.consumerQr),
+                    icon: const Icon(Icons.qr_code),
+                    label: const Text('My QR / Receive'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 

@@ -20,6 +20,8 @@ import '../screens/consumer/consumer_dashboard_screen.dart';
 import '../screens/consumer/consumer_wallet_screen.dart';
 import '../screens/consumer/consumer_pay_confirm_screen.dart';
 import '../screens/consumer/consumer_settings_screen.dart';
+import '../screens/consumer/consumer_qr_screen.dart';
+import '../screens/consumer/consumer_receive_confirm_screen.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -177,6 +179,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.nfcPay,
         builder: (context, state) => const NfcPayScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.consumerQr,
+        builder: (context, state) => const ConsumerQrScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.consumerReceiveConfirm,
+        builder: (context, state) => ConsumerReceiveConfirmScreen(
+          receiverUserId: state.uri.queryParameters['userId'] ?? '',
+          receiverName: state.uri.queryParameters['name'] ?? '',
+        ),
       ),
     ],
   );

@@ -43,6 +43,21 @@ class ConsumerService {
     return WalletBalance.fromJson(response.data);
   }
 
+  Future<Map<String, dynamic>> sendToWallet(
+    String receiverUserId,
+    double amount, {
+    String? description,
+  }) async {
+    final idempotencyKey = const Uuid().v4();
+    final response = await _api.post('/wallet/send', data: {
+      'receiver_user_id': receiverUserId,
+      'amount': amount.toString(),
+      'idempotency_key': idempotencyKey,
+      if (description != null) 'description': description,
+    });
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<List<Transaction>> listConsumerTransactions({
     int page = 1,
     int pageSize = 20,

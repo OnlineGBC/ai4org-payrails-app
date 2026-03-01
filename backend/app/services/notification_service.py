@@ -1,5 +1,9 @@
 import logging
+import smtplib
+import ssl
 from datetime import datetime, timezone
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -51,17 +55,11 @@ def _send_email(
     rail: str,
     description: str | None,
 ) -> None:
+    if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
+        logger.debug("notification_service: SMTP credentials not configured, skipping email")
+        return
+
     try:
-        import brevo_python
-        from brevo_python.rest import ApiException
-
-        configuration = brevo_python.Configuration()
-        configuration.api_key["api-key"] = settings.BREVO_API_KEY
-
-        api_instance = brevo_python.TransactionalEmailsApi(
-            brevo_python.ApiClient(configuration)
-        )
-
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         subject = f"Transaction {status.upper()}: ${amount:,.2f} to {merchant_name}"
         html_content = f"""
@@ -88,16 +86,23 @@ def _send_email(
         </body></html>
         """
 
-        send_smtp_email = brevo_python.SendSmtpEmail(
-            to=[{"email": to_email, "name": name}],
-            sender={
-                "email": settings.BREVO_SENDER_EMAIL,
-                "name": settings.BREVO_SENDER_NAME,
-            },
-            subject=subject,
-            html_content=html_content,
-        )
-        api_instance.send_transac_email(send_smtp_email)
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{settings.SENDER_NAME} <{settings.FROM_ADDR}>"
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_content, "html"))
+
+        if settings.SMTP_USE_TLS:
+            context = ssl.create_default_context()
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                server.starttls(context=context)
+                server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+                server.sendmail(settings.FROM_ADDR, to_email, msg.as_string())
+        else:
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+                server.sendmail(settings.FROM_ADDR, to_email, msg.as_string())
+
         logger.info("Email sent to %s for txn status=%s", to_email, status)
     except Exception as e:
         logger.warning("notification_service: email send failed: %s", e)
@@ -109,24 +114,28 @@ def _send_sms(
     amount: float,
     merchant_name: str,
 ) -> None:
+    if not settings.BREVO_API_KEY:
+        logger.debug("notification_service: BREVO_API_KEY not configured, skipping SMS")
+        return
+
     try:
-        import brevo_python
-        from brevo_python.rest import ApiException
-
-        configuration = brevo_python.Configuration()
-        configuration.api_key["api-key"] = settings.BREVO_API_KEY
-
-        api_instance = brevo_python.TransactionalSMSApi(
-            brevo_python.ApiClient(configuration)
-        )
+        import httpx
 
         message = f"PayRails: Your ${amount:,.2f} payment to {merchant_name} {status}."
-        send_transac_sms = brevo_python.SendTransacSms(
-            sender=settings.BREVO_SMS_SENDER,
-            recipient=to_phone,
-            content=message,
+        response = httpx.post(
+            "https://api.brevo.com/v3/transactionalSMS/sms",
+            json={
+                "sender": settings.BREVO_SMS_SENDER,
+                "recipient": to_phone,
+                "content": message,
+            },
+            headers={
+                "api-key": settings.BREVO_API_KEY,
+                "Content-Type": "application/json",
+            },
+            timeout=10,
         )
-        api_instance.send_transac_sms(send_transac_sms)
+        response.raise_for_status()
         logger.info("SMS sent to %s for status=%s", to_phone, status)
     except Exception as e:
         logger.warning("notification_service: SMS send failed: %s", e)

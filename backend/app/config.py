@@ -10,10 +10,18 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./local.db"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080,http://localhost:5000,http://localhost:8000"
     ENCRYPTION_KEY: str = ""
+    # Email via SMTP relay (Brevo or any provider)
+    SMTP_HOST: str = "smtp-relay.brevo.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
+    FROM_ADDR: str = "noreply@payrails.test"
+    SENDER_NAME: str = "PayRails"
+    # SMS via Brevo REST API
     BREVO_API_KEY: str = ""
-    BREVO_SENDER_EMAIL: str = "noreply@payrails.test"
-    BREVO_SENDER_NAME: str = "PayRails"
     BREVO_SMS_SENDER: str = "PayRails"
+    # Claude API (AI-generated transaction descriptions)
     ANTHROPIC_API_KEY: str = ""
 
     class Config:

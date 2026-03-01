@@ -120,6 +120,21 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
                   onChanged: (v) => setState(() => _selectedRail = v),
                 ),
                 const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    border: Border.all(color: Colors.amber.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '⚠️  MVP Demo Environment — All transactions are simulated.\n'
+                    'Do not enter real personal or financial information.',
+                    style: TextStyle(fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading

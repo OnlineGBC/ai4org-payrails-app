@@ -5,6 +5,80 @@ import '../../providers/consumer_provider.dart';
 import '../../router/route_names.dart';
 import '../../widgets/payrails_app_bar.dart';
 
+// Anomaly detection: map of merchant name substrings (lowercase) to category
+const Map<String, String> _merchantCategory = {
+  'westernunion': 'money_transfer',
+  'netflix': 'streaming',
+  'boostmobile': 'telecom',
+  'foodlion': 'grocery',
+  'aldi': 'grocery',
+  'costco': 'grocery',
+  'walmart': 'grocery',
+  'dollargeneral': 'grocery',
+  'mcdonalds': 'restaurant',
+  'burgerking': 'restaurant',
+  'subway': 'restaurant',
+  'target': 'retail',
+  'nike': 'retail',
+};
+
+const Set<String> _physicalGoodsKeywords = {
+  'toothpaste', 'groceries', 'grocery', 'shoes', 'burger', 'sandwich',
+  'meal', 'food', 'clothing', 'clothes', 'shirt', 'pants', 'dress',
+  'hardware', 'furniture', 'electronics', 'appliance',
+};
+
+const Set<String> _financialKeywords = {
+  'transfer', 'remittance', 'wire', 'send money', 'money order',
+  'cash', 'loan', 'payment plan', 'investment',
+};
+
+String? _checkAnomaly(String merchantName, String description) {
+  final merchantLower = merchantName.toLowerCase().replaceAll(' ', '');
+  final descLower = description.toLowerCase();
+
+  String? category;
+  for (final entry in _merchantCategory.entries) {
+    if (merchantLower.contains(entry.key)) {
+      category = entry.value;
+      break;
+    }
+  }
+  if (category == null) return null;
+
+  if (category == 'money_transfer') {
+    for (final kw in _physicalGoodsKeywords) {
+      if (descLower.contains(kw)) {
+        return 'Unusual description for a money transfer merchant. '
+            '"$description" sounds like a physical purchase. '
+            'Proceed only if this is intentional.';
+      }
+    }
+  }
+
+  if (category == 'streaming' || category == 'telecom') {
+    for (final kw in _physicalGoodsKeywords) {
+      if (descLower.contains(kw)) {
+        return 'Unusual description for a ${category == 'streaming' ? 'streaming' : 'telecom'} merchant. '
+            '"$description" sounds like a physical purchase. '
+            'Proceed only if this is intentional.';
+      }
+    }
+  }
+
+  if (category == 'restaurant' || category == 'grocery' || category == 'retail') {
+    for (final kw in _financialKeywords) {
+      if (descLower.contains(kw)) {
+        return 'Unusual description for a ${category} merchant. '
+            '"$description" sounds like a financial transaction. '
+            'Proceed only if this is intentional.';
+      }
+    }
+  }
+
+  return null;
+}
+
 class ConsumerPayConfirmScreen extends ConsumerStatefulWidget {
   final String merchantId;
 
@@ -61,6 +135,16 @@ class _ConsumerPayConfirmScreenState
       return;
     }
 
+    // Anomaly check
+    final desc = _descriptionController.text.trim();
+    if (desc.isNotEmpty && _merchantName != null) {
+      final warning = _checkAnomaly(_merchantName!, desc);
+      if (warning != null) {
+        final proceed = await _showAnomalyDialog(warning);
+        if (!proceed) return;
+      }
+    }
+
     setState(() {
       _paying = true;
       _error = null;
@@ -68,9 +152,7 @@ class _ConsumerPayConfirmScreenState
 
     try {
       final service = ref.read(consumerServiceProvider);
-      final description = _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim();
+      final description = desc.isEmpty ? null : desc;
       final result = await service.consumerPay(
         widget.merchantId,
         amount,
@@ -102,6 +184,27 @@ class _ConsumerPayConfirmScreenState
         });
       }
     }
+  }
+
+  Future<bool> _showAnomalyDialog(String warning) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unusual Transaction Detected'),
+        content: Text(warning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Proceed Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   @override
@@ -187,6 +290,24 @@ class _ConsumerPayConfirmScreenState
                             textAlign: TextAlign.center,
                           ),
                         ),
+                      // Disclaimer
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          border: Border.all(color: Colors.amber.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          '⚠️  MVP Demo Environment — All transactions are simulated.\n'
+                          'Do not enter real personal or financial information.',
+                          style: TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(

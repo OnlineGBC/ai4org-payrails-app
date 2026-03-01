@@ -32,6 +32,7 @@ class PaymentService {
 
   Future<List<Transaction>> listPayments({
     String? merchantId,
+    String? userId,
     String? status,
     String? rail,
     int page = 1,
@@ -39,6 +40,7 @@ class PaymentService {
   }) async {
     final response = await _api.get(ApiConfig.payments, queryParameters: {
       if (merchantId != null) 'merchant_id': merchantId,
+      if (userId != null) 'user_id': userId,
       if (status != null) 'status': status,
       if (rail != null) 'rail': rail,
       'page': page,

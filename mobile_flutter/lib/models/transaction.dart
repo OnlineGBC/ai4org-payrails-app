@@ -10,6 +10,7 @@ class Transaction {
   final String idempotencyKey;
   final String? referenceId;
   final String? failureReason;
+  final String? description;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -25,6 +26,7 @@ class Transaction {
     required this.idempotencyKey,
     this.referenceId,
     this.failureReason,
+    this.description,
     this.createdAt,
     this.updatedAt,
   });
@@ -44,6 +46,7 @@ class Transaction {
       idempotencyKey: json['idempotency_key'] as String,
       referenceId: json['reference_id'] as String?,
       failureReason: json['failure_reason'] as String?,
+      description: json['description'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -62,5 +65,6 @@ class Transaction {
         'rail': rail,
         'status': status,
         'idempotency_key': idempotencyKey,
+        'description': description,
       };
 }

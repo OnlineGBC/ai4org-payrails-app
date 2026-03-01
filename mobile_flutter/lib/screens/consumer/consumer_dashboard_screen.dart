@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/consumer_provider.dart';
 import '../../router/route_names.dart';
 import '../../widgets/payrails_app_bar.dart';
+import '../../widgets/transaction_tile.dart';
 
 class ConsumerDashboardScreen extends ConsumerStatefulWidget {
   const ConsumerDashboardScreen({super.key});
@@ -24,11 +26,16 @@ class _ConsumerDashboardScreenState
 
   void _loadData() {
     ref.read(walletBalanceProvider.notifier).load();
+    final user = ref.read(authStateProvider).user;
+    if (user != null) {
+      ref.read(consumerTransactionListProvider.notifier).load(user.id);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final walletState = ref.watch(walletBalanceProvider);
+    final txnState = ref.watch(consumerTransactionListProvider);
     final user = ref.watch(authStateProvider).user;
 
     return Scaffold(
@@ -51,7 +58,7 @@ class _ConsumerDashboardScreenState
                     walletState.when(
                       data: (b) => Text(
                         b != null
-                            ? '\$${b.balance.toStringAsFixed(2)}'
+                            ? '\$${NumberFormat('#,##0.00').format(b.balance)}'
                             : '\$0.00',
                         style: Theme.of(context)
                             .textTheme
@@ -82,6 +89,34 @@ class _ConsumerDashboardScreenState
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
+
+            // Recent Transactions
+            Text(
+              'Recent Transactions',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            txnState.when(
+              data: (txns) => txns.isEmpty
+                  ? Text(
+                      'No transactions yet.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    )
+                  : Column(
+                      children: txns
+                          .map((t) => TransactionTile(
+                                transaction: t,
+                                currentUserId: user?.id,
+                                onTap: () => context.push('/payments/${t.id}'),
+                              ))
+                          .toList(),
+                    ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) =>
+                  Text('Error loading transactions: $e',
+                      style: Theme.of(context).textTheme.bodySmall),
             ),
           ],
         ),

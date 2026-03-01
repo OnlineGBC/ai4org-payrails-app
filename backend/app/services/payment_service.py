@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.transaction import Transaction
 from app.models.merchant import Merchant
+from app.models.user import User
 from app.models.bank_config import BankConfig
 from app.schemas.transaction import PaymentCreate, PaymentResponse, PaymentListResponse
 from app.services.rail_selector import select_rail
@@ -11,6 +12,7 @@ from app.services.bank.mock_bank import mock_bank_service
 from app.services.bank.schemas import TransferRequest
 from app.services.ledger_service import record_debit, record_credit
 from app.services.event_service import log_event
+from app.services import description_service, notification_service
 
 
 def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
@@ -83,6 +85,13 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
     txn.failure_reason = result.failure_reason
     db.commit()
 
+    # Generate AI description
+    generated_desc = description_service.generate_description(
+        receiver.name, float(payload.amount), rail
+    )
+    txn.description = generated_desc
+    db.commit()
+
     # If completed, create ledger entries
     if result.status == "completed":
         # 1.25% discount for FedNow/RTP rails
@@ -99,6 +108,14 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
         log_event(db, "payment.failed", "payment_service", txn.id, {
             "reason": result.failure_reason,
         })
+
+    # Send notification to sender user (if applicable)
+    sender_user = db.query(User).filter(User.merchant_id == payload.sender_merchant_id).first()
+    if sender_user:
+        notification_service.notify_transaction(
+            db, sender_user.id, txn.id, txn.status,
+            float(txn.amount), receiver.name, rail, txn.description,
+        )
 
     db.refresh(txn)
     return PaymentResponse.model_validate(txn)

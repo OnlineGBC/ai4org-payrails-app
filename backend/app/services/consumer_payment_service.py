@@ -10,6 +10,7 @@ from app.services.bank.schemas import TransferRequest
 from app.services.wallet_service import wallet_debit, get_wallet_balance
 from app.services.ledger_service import record_credit
 from app.services.event_service import log_event
+from app.services import description_service, notification_service
 
 
 def consumer_pay(
@@ -89,6 +90,13 @@ def consumer_pay(
     txn.failure_reason = result.failure_reason
     db.commit()
 
+    # Generate AI description
+    generated_desc = description_service.generate_description(
+        merchant.name, float(amount), rail, description
+    )
+    txn.description = generated_desc
+    db.commit()
+
     # If completed, update ledger entries
     if result.status == "completed":
         # 1.25% discount for FedNow/RTP rails
@@ -98,8 +106,7 @@ def consumer_pay(
             settled_amount = amount
         txn.amount = settled_amount
         db.commit()
-        desc = description or f"Payment to {merchant.name}"
-        wallet_debit(db, user_id, settled_amount, txn.id, desc)
+        wallet_debit(db, user_id, settled_amount, txn.id, generated_desc)
         record_credit(db, merchant_id, settled_amount, txn.id, f"Payment from consumer {user_id}")
         db.commit()
         log_event(db, "consumer_payment.completed", "consumer_payment_service", txn.id)
@@ -107,6 +114,12 @@ def consumer_pay(
         log_event(db, "consumer_payment.failed", "consumer_payment_service", txn.id, {
             "reason": result.failure_reason,
         })
+
+    # Send notification to consumer user
+    notification_service.notify_transaction(
+        db, user_id, txn.id, txn.status,
+        float(txn.amount), merchant.name, rail, txn.description,
+    )
 
     return {
         "transaction_id": txn.id,

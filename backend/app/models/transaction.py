@@ -19,5 +19,6 @@ class Transaction(Base):
     idempotency_key = Column(String, unique=True, nullable=False, index=True)
     reference_id = Column(String, nullable=True)
     failure_reason = Column(String, nullable=True)
+    description = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

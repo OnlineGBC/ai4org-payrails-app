@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../providers/consumer_provider.dart';
 import '../../widgets/payrails_app_bar.dart';
 
@@ -40,7 +41,7 @@ class _ConsumerWalletScreenState extends ConsumerState<ConsumerWalletScreen> {
     _amountController.clear();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Topped up \$${amount.toStringAsFixed(2)}')),
+        SnackBar(content: Text('Topped up \$${NumberFormat('#,##0.00').format(amount)}')),
       );
     }
   }
@@ -69,7 +70,7 @@ class _ConsumerWalletScreenState extends ConsumerState<ConsumerWalletScreen> {
                     walletState.when(
                       data: (b) => Text(
                         b != null
-                            ? '\$${b.balance.toStringAsFixed(2)}'
+                            ? '\$${NumberFormat('#,##0.00').format(b.balance)}'
                             : '\$0.00',
                         style: Theme.of(context)
                             .textTheme

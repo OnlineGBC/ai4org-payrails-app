@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/transaction.dart';
 import '../../providers/payment_provider.dart';
+import 'package:intl/intl.dart';
 import '../../widgets/payrails_app_bar.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/rail_badge.dart';
@@ -64,7 +65,7 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
           // Amount
           Center(
             child: Text(
-              '\$${txn.amount.toStringAsFixed(2)}',
+              '\$${NumberFormat('#,##0.00').format(txn.amount)}',
               style: Theme.of(context)
                   .textTheme
                   .headlineLarge

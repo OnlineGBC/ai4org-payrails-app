@@ -9,3 +9,5 @@ httpx
 pytest
 pydantic-settings
 cryptography
+brevo-python
+anthropic

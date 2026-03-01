@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import 'status_chip.dart';
 import 'rail_badge.dart';
@@ -70,6 +71,9 @@ class TransactionTile extends StatelessWidget {
       label = '';
     }
 
+    final formattedAmount =
+        NumberFormat('#,##0.00').format(transaction.amount);
+
     return ListTile(
       onTap: onTap,
       leading: CircleAvatar(
@@ -77,24 +81,41 @@ class TransactionTile extends StatelessWidget {
         child: Icon(icon, color: iconColor),
       ),
       title: Text(
-        '$prefix\$${transaction.amount.toStringAsFixed(2)}',
+        '$prefix\$$formattedAmount',
         style: TextStyle(fontWeight: FontWeight.w600, color: amountColor),
       ),
-      subtitle: Row(
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (label.isNotEmpty) ...[
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: sent ? Colors.red.shade400 : Colors.green.shade400)),
-            const SizedBox(width: 8),
-          ],
-          RailBadge(rail: transaction.rail),
-          const SizedBox(width: 8),
-          if (transaction.createdAt != null)
+          Row(
+            children: [
+              if (label.isNotEmpty) ...[
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: sent
+                            ? Colors.red.shade400
+                            : Colors.green.shade400)),
+                const SizedBox(width: 8),
+              ],
+              RailBadge(rail: transaction.rail),
+              const SizedBox(width: 8),
+              if (transaction.createdAt != null)
+                Text(
+                  _formatDate(transaction.createdAt!),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+          if (transaction.description?.isNotEmpty == true)
             Text(
-              _formatDate(transaction.createdAt!),
-              style: Theme.of(context).textTheme.bodySmall,
+              transaction.description!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey.shade600,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
         ],
       ),

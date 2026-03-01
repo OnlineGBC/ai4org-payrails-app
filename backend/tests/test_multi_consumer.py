@@ -357,10 +357,12 @@ class TestConsumerInsufficientFunds:
                     mock_bank.return_value = MagicMock(
                         status="completed", reference_id="ins-ref-2", failure_reason=None
                     )
-                    # Drain the $500 wallet
-                    _consumer_pay(client, u_id, email, "merchant-001", "500.00")
+                    # Use ACH rail (no FedNow/RTP discount) so exactly $500.00 is
+                    # debited and the wallet reaches $0.00.
+                    _consumer_pay(client, u_id, email, "merchant-001", "500.00",
+                                  rail="ach")
 
-        # Now attempt a second payment — should be rejected immediately
+        # Wallet is now $0 — a $1.00 payment must be rejected immediately
         _consumer_pay(client, u_id, email, "merchant-001", "1.00",
                       expected_status=400)
 

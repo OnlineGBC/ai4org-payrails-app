@@ -25,7 +25,9 @@
       "Bash(__NEW_LINE_2a2f3acdfdf1835f__ echo \"...\")",
       "Bash(docker ps:*)",
       "Bash(\"payrails.app.venv/Scripts/python.exe\" -m alembic stamp head)",
-      "Bash(payrails.app.venv/Scripts/python.exe:*)"
+      "Bash(payrails.app.venv/Scripts/python.exe:*)",
+      "Bash(./payrails.app.venv/Scripts/python.exe:*)",
+      "Bash(C:/PROGRA~1/Python310/python.exe:*)"
     ]
   }
 }

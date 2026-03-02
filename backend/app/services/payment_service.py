@@ -27,10 +27,8 @@ def _enrich_response(db: Session, txn: Transaction) -> PaymentResponse:
     elif txn.sender_user_id:
         u = db.query(User).filter(User.id == txn.sender_user_id).first()
         if u:
-            sender_name = (
-                f"{u.first_name} {u.last_name}".strip()
-                if (u.first_name or u.last_name) else u.email
-            )
+            name_parts = [n for n in (u.first_name, u.last_name) if n]
+            sender_name = " ".join(name_parts) if name_parts else u.email
         else:
             sender_name = txn.sender_user_id
 
@@ -41,10 +39,8 @@ def _enrich_response(db: Session, txn: Transaction) -> PaymentResponse:
     elif txn.receiver_user_id:
         u = db.query(User).filter(User.id == txn.receiver_user_id).first()
         if u:
-            receiver_name = (
-                f"{u.first_name} {u.last_name}".strip()
-                if (u.first_name or u.last_name) else u.email
-            )
+            name_parts = [n for n in (u.first_name, u.last_name) if n]
+            receiver_name = " ".join(name_parts) if name_parts else u.email
         else:
             receiver_name = txn.receiver_user_id
 

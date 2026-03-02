@@ -54,4 +54,12 @@ class AuthService {
     final response = await _api.patch(ApiConfig.me, data: {'email': email});
     return User.fromJson(response.data);
   }
+
+  Future<User> updateName(String firstName, String lastName) async {
+    final response = await _api.patch(ApiConfig.me, data: {
+      'first_name': firstName,
+      'last_name': lastName,
+    });
+    return User.fromJson(response.data);
+  }
 }

@@ -38,6 +38,12 @@ const Map<String, String> _merchantCategory = {
   'nike': 'retail',
 };
 
+const Set<String> _dangerousKeywords = {
+  'nuclear', 'weapon', 'missile', 'explosive', 'bomb', 'grenade',
+  'fentanyl', 'cocaine', 'heroin', 'meth', 'drug', 'narcotics',
+  'illegal', 'stolen', 'counterfeit', 'smuggle', 'launder',
+};
+
 const Set<String> _physicalGoodsKeywords = {
   'toothpaste', 'groceries', 'grocery', 'shoes', 'burger', 'sandwich',
   'meal', 'food', 'clothing', 'clothes', 'shirt', 'pants', 'dress',
@@ -50,8 +56,17 @@ const Set<String> _financialKeywords = {
 };
 
 String? _checkAnomaly(String merchantName, String description) {
-  final merchantLower = merchantName.toLowerCase().replaceAll(' ', '');
   final descLower = description.toLowerCase();
+
+  // Universal dangerous keyword check — runs before any category logic
+  for (final kw in _dangerousKeywords) {
+    if (descLower.contains(kw)) {
+      return '⚠️ Suspicious description detected: "$description" — this transaction may violate policies. '
+          'Proceed only if you are certain this is legitimate.';
+    }
+  }
+
+  final merchantLower = merchantName.toLowerCase().replaceAll(' ', '');
 
   String? category;
   for (final entry in _merchantCategory.entries) {

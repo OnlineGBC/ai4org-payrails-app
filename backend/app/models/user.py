@@ -12,5 +12,7 @@ class User(Base):
     role = Column(String, default="user")  # user, admin, merchant_admin
     merchant_id = Column(String, ForeignKey("merchants.id"), nullable=True)
     phone = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

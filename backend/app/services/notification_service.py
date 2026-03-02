@@ -138,4 +138,11 @@ def _send_sms(
         response.raise_for_status()
         logger.info("SMS sent to %s for status=%s", to_phone, status)
     except Exception as e:
-        logger.warning("notification_service: SMS send failed: %s", e)
+        response_body = getattr(getattr(e, 'response', None), 'text', None)
+        if response_body:
+            logger.warning(
+                "notification_service: SMS send failed: %s | Brevo response: %s",
+                e, response_body,
+            )
+        else:
+            logger.warning("notification_service: SMS send failed: %s", e)

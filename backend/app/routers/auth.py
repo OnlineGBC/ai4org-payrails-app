@@ -89,6 +89,10 @@ def update_me(
             current_user.email = new_email
     if payload.phone is not None:
         current_user.phone = payload.phone.strip() or None
+    if payload.first_name is not None:
+        current_user.first_name = payload.first_name.strip() or None
+    if payload.last_name is not None:
+        current_user.last_name = payload.last_name.strip() or None
     db.commit()
     db.refresh(current_user)
     return current_user

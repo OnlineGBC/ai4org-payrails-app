@@ -18,6 +18,8 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -26,6 +28,8 @@ class UserResponse(BaseModel):
     role: str
     merchant_id: Optional[str] = None
     phone: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     created_at: Optional[datetime] = None
 
     class Config:

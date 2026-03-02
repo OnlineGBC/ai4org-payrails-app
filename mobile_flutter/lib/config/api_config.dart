@@ -9,7 +9,7 @@ class ApiConfig {
     if (envUrl.isNotEmpty) return envUrl;
 
     // Web: use machine IP so phones/external browsers can reach the backend
-    if (kIsWeb) return 'http://192.168.1.88:3000';
+    if (kIsWeb) return 'http://192.168.1.88:8000';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://192.168.1.88:8080';
     }

@@ -204,8 +204,13 @@ class _ConsumerPayConfirmScreenState
       return;
     }
 
-    // Anomaly check — always runs (description field is always populated)
     final desc = _descriptionController.text.trim();
+    if (desc.isEmpty) {
+      setState(() => _error = 'Description is required');
+      return;
+    }
+
+    // Anomaly check — always runs
     if (_merchantName != null) {
       final warning = _checkAnomaly(_merchantName!, desc);
       if (warning != null) {
@@ -340,7 +345,7 @@ class _ConsumerPayConfirmScreenState
                       TextField(
                         controller: _descriptionController,
                         decoration: const InputDecoration(
-                          labelText: 'Description',
+                          labelText: 'Description (Required)',
                           hintText: 'What is this payment for?',
                           border: OutlineInputBorder(),
                         ),

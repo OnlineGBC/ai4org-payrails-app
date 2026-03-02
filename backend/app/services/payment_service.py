@@ -86,9 +86,9 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
     txn.failure_reason = result.failure_reason
     db.commit()
 
-    # Generate AI description
+    # Generate AI description (user-provided takes priority)
     generated_desc = description_service.generate_description(
-        receiver.name, float(payload.amount), rail
+        receiver.name, float(payload.amount), rail, payload.description
     )
     txn.description = generated_desc
     db.commit()

@@ -17,6 +17,7 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _receiverController = TextEditingController();
+  final _descriptionController = TextEditingController();
   String? _selectedRail;
   bool _isLoading = false;
   String? _error;
@@ -25,6 +26,7 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
   void dispose() {
     _amountController.dispose();
     _receiverController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -50,6 +52,7 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
         amount: double.parse(_amountController.text),
         idempotencyKey: DateTime.now().millisecondsSinceEpoch.toString(),
         preferredRail: _selectedRail,
+        description: _descriptionController.text.trim(),
       );
 
       if (mounted) {
@@ -103,6 +106,17 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
                 ),
                 const SizedBox(height: 16),
                 AmountInput(controller: _amountController),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'What is this payment for?',
+                    prefixIcon: Icon(Icons.description),
+                  ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'Description is required' : null,
+                ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedRail,

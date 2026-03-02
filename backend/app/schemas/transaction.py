@@ -13,6 +13,7 @@ class PaymentCreate(BaseModel):
     currency: str = "USD"
     idempotency_key: str
     preferred_rail: Optional[str] = None  # fednow, rtp, ach, card
+    description: Optional[str] = None
 
 
 class PaymentResponse(BaseModel):

@@ -14,6 +14,7 @@ class PaymentService {
     required double amount,
     required String idempotencyKey,
     String? preferredRail,
+    String? description,
   }) async {
     final response = await _api.post(ApiConfig.payments, data: {
       'sender_merchant_id': senderMerchantId,
@@ -21,6 +22,7 @@ class PaymentService {
       'amount': amount.toString(),
       'idempotency_key': idempotencyKey,
       if (preferredRail != null) 'preferred_rail': preferredRail,
+      if (description != null && description.isNotEmpty) 'description': description,
     });
     return Transaction.fromJson(response.data);
   }

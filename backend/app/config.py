@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     DATABASE_URL: str = "sqlite:///./local.db"
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080,http://localhost:5000,http://localhost:8000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8080,http://localhost:5000,http://localhost:8000,http://192.168.1.88:3000,http://192.168.1.88:8080,http://192.168.1.88:8000"
     ENCRYPTION_KEY: str = ""
     # Email via SMTP relay (Brevo or any provider)
     SMTP_HOST: str = "smtp-relay.brevo.com"

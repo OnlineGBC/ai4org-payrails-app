@@ -303,7 +303,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
     final showManualEntry = isHttpWeb || _cameraError;
 
     return Scaffold(
-      appBar: const PayRailsAppBar(title: 'Scan QR Code'),
+      appBar: const PayRailsAppBar(title: 'Scan QR to Send Funds'),
       body: showManualEntry
           ? _buildManualEntry()
           : Stack(

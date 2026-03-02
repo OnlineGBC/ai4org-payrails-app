@@ -43,7 +43,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code),
-            tooltip: 'QR Payment',
+            tooltip: 'Display QR to Receive Funds',
             onPressed: () => context.push(RouteNames.qrGenerate),
           ),
           IconButton(
@@ -106,7 +106,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => context.push(RouteNames.qrScan),
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Scan QR'),
+                    label: const Text('Scan QR to Send Funds'),
                   ),
                 ),
               ],
@@ -117,7 +117,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: OutlinedButton.icon(
                 onPressed: () => context.push(RouteNames.qrGenerate),
                 icon: const Icon(Icons.qr_code),
-                label: const Text('Show my QR and Receive Payment'),
+                label: const Text('Display QR to Receive Funds'),
               ),
             ),
             const SizedBox(height: 24),

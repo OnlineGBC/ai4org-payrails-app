@@ -85,7 +85,7 @@ class _ConsumerDashboardScreenState
                   child: ElevatedButton.icon(
                     onPressed: () => context.push(RouteNames.qrScan),
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('Scan QR to Pay'),
+                    label: const Text('Scan QR to Send Funds'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -93,7 +93,7 @@ class _ConsumerDashboardScreenState
                   child: OutlinedButton.icon(
                     onPressed: () => context.push(RouteNames.consumerQr),
                     icon: const Icon(Icons.qr_code),
-                    label: const Text('My QR / Receive'),
+                    label: const Text('Display QR to Receive Funds'),
                   ),
                 ),
               ],

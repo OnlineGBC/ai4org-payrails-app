@@ -239,7 +239,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.qr_code),
-                  title: const Text('QR Payment'),
+                  title: const Text('Display QR to Receive Funds'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push(RouteNames.qrGenerate),
                 ),

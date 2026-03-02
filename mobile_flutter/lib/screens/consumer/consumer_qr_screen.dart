@@ -36,7 +36,7 @@ class ConsumerQrScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: const PayRailsAppBar(title: 'My QR Code'),
+      appBar: const PayRailsAppBar(title: 'Display QR to Receive Funds'),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -44,7 +44,7 @@ class ConsumerQrScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Show this QR to receive money',
+                'Others scan this QR to send you funds',
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),

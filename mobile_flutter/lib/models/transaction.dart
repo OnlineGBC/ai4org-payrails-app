@@ -12,6 +12,8 @@ class Transaction {
   final String? referenceId;
   final String? failureReason;
   final String description;
+  final String? senderName;
+  final String? receiverName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -29,6 +31,8 @@ class Transaction {
     this.referenceId,
     this.failureReason,
     this.description = '',
+    this.senderName,
+    this.receiverName,
     this.createdAt,
     this.updatedAt,
   });
@@ -50,6 +54,8 @@ class Transaction {
       referenceId: json['reference_id'] as String?,
       failureReason: json['failure_reason'] as String?,
       description: json['description'] as String? ?? '',
+      senderName: json['sender_name'] as String?,
+      receiverName: json['receiver_name'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,

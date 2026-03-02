@@ -30,6 +30,8 @@ class PaymentResponse(BaseModel):
     reference_id: Optional[str] = None
     failure_reason: Optional[str] = None
     description: str = ""
+    sender_name: Optional[str] = None
+    receiver_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

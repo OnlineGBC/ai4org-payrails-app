@@ -107,6 +107,15 @@ class TransactionTile extends StatelessWidget {
                 ),
             ],
           ),
+          if (transaction.senderName != null || transaction.receiverName != null)
+            Text(
+              '${transaction.senderName ?? '?'} → ${transaction.receiverName ?? '?'}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade500,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           if (transaction.description.isNotEmpty)
             Text(
               transaction.description,

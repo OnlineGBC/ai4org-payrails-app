@@ -16,6 +16,29 @@ from app.services.event_service import log_event
 from app.services import description_service, notification_service
 
 
+def _enrich_response(db: Session, txn: Transaction) -> PaymentResponse:
+    """Populate sender_name and receiver_name from DB lookups."""
+    resp = PaymentResponse.model_validate(txn)
+
+    sender_name = None
+    if txn.sender_merchant_id:
+        m = db.query(Merchant).filter(Merchant.id == txn.sender_merchant_id).first()
+        sender_name = m.name if m else txn.sender_merchant_id
+    elif txn.sender_user_id:
+        u = db.query(User).filter(User.id == txn.sender_user_id).first()
+        sender_name = u.email if u else txn.sender_user_id
+
+    receiver_name = None
+    if txn.receiver_merchant_id:
+        m = db.query(Merchant).filter(Merchant.id == txn.receiver_merchant_id).first()
+        receiver_name = m.name if m else txn.receiver_merchant_id
+    elif txn.receiver_user_id:
+        u = db.query(User).filter(User.id == txn.receiver_user_id).first()
+        receiver_name = u.email if u else txn.receiver_user_id
+
+    return resp.model_copy(update={"sender_name": sender_name, "receiver_name": receiver_name})
+
+
 def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
     # Idempotency check
     existing = (
@@ -24,7 +47,7 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
         .first()
     )
     if existing:
-        return PaymentResponse.model_validate(existing)
+        return _enrich_response(db, existing)
 
     # Validate merchants
     sender = db.query(Merchant).filter(Merchant.id == payload.sender_merchant_id).first()
@@ -130,14 +153,14 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
         )
 
     db.refresh(txn)
-    return PaymentResponse.model_validate(txn)
+    return _enrich_response(db, txn)
 
 
 def get_payment(db: Session, payment_id: str) -> Optional[PaymentResponse]:
     txn = db.query(Transaction).filter(Transaction.id == payment_id).first()
     if not txn:
         return None
-    return PaymentResponse.model_validate(txn)
+    return _enrich_response(db, txn)
 
 
 def list_payments(
@@ -175,7 +198,7 @@ def list_payments(
     )
 
     return PaymentListResponse(
-        items=[PaymentResponse.model_validate(t) for t in items],
+        items=[_enrich_response(db, t) for t in items],
         total=total,
         page=page,
         page_size=page_size,
@@ -194,4 +217,4 @@ def cancel_payment(db: Session, payment_id: str) -> PaymentResponse:
     db.refresh(txn)
 
     log_event(db, "payment.cancelled", "payment_service", txn.id)
-    return PaymentResponse.model_validate(txn)
+    return _enrich_response(db, txn)

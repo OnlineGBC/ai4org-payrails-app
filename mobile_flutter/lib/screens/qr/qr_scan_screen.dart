@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -295,7 +296,9 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final showManualEntry = _cameraError;
+    // On web, camera doesn't work reliably (requires HTTPS + browser support).
+    // Always use manual entry on web to avoid a blank screen.
+    final showManualEntry = kIsWeb || _cameraError;
 
     return Scaffold(
       appBar: const PayRailsAppBar(title: 'Scan QR Code'),

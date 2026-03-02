@@ -2,7 +2,8 @@ class Transaction {
   final String id;
   final String? senderMerchantId;
   final String? senderUserId;
-  final String receiverMerchantId;
+  final String? receiverMerchantId;
+  final String? receiverUserId;
   final double amount;
   final String currency;
   final String? rail;
@@ -10,7 +11,7 @@ class Transaction {
   final String idempotencyKey;
   final String? referenceId;
   final String? failureReason;
-  final String? description;
+  final String description;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -18,7 +19,8 @@ class Transaction {
     required this.id,
     this.senderMerchantId,
     this.senderUserId,
-    required this.receiverMerchantId,
+    this.receiverMerchantId,
+    this.receiverUserId,
     required this.amount,
     this.currency = 'USD',
     this.rail,
@@ -26,7 +28,7 @@ class Transaction {
     required this.idempotencyKey,
     this.referenceId,
     this.failureReason,
-    this.description,
+    this.description = '',
     this.createdAt,
     this.updatedAt,
   });
@@ -36,7 +38,8 @@ class Transaction {
       id: json['id'] as String,
       senderMerchantId: json['sender_merchant_id'] as String?,
       senderUserId: json['sender_user_id'] as String?,
-      receiverMerchantId: json['receiver_merchant_id'] as String,
+      receiverMerchantId: json['receiver_merchant_id'] as String?,
+      receiverUserId: json['receiver_user_id'] as String?,
       amount: (json['amount'] is String)
           ? double.parse(json['amount'] as String)
           : (json['amount'] as num).toDouble(),
@@ -46,7 +49,7 @@ class Transaction {
       idempotencyKey: json['idempotency_key'] as String,
       referenceId: json['reference_id'] as String?,
       failureReason: json['failure_reason'] as String?,
-      description: json['description'] as String?,
+      description: json['description'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,

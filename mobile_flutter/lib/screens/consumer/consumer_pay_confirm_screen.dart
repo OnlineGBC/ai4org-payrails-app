@@ -5,6 +5,21 @@ import '../../providers/consumer_provider.dart';
 import '../../router/route_names.dart';
 import '../../widgets/payrails_app_bar.dart';
 
+// Default descriptions by merchant category — used to pre-populate the field
+String _defaultDescription(String merchantName) {
+  final lower = merchantName.toLowerCase().replaceAll(' ', '');
+  if (lower.contains('westernunion')) return 'Money transfer';
+  if (lower.contains('netflix')) return 'Monthly streaming subscription';
+  if (lower.contains('boostmobile')) return 'Mobile phone top-up';
+  if (lower.contains('walmart') || lower.contains('foodlion') ||
+      lower.contains('aldi') || lower.contains('costco') ||
+      lower.contains('dollargeneral')) return 'Grocery purchase';
+  if (lower.contains('mcdonalds') || lower.contains('burgerking') ||
+      lower.contains('subway')) return 'Meal / food order';
+  if (lower.contains('target') || lower.contains('nike')) return 'Retail purchase';
+  return 'Payment';
+}
+
 // Anomaly detection: map of merchant name substrings (lowercase) to category
 const Map<String, String> _merchantCategory = {
   'westernunion': 'money_transfer',
@@ -116,10 +131,15 @@ class _ConsumerPayConfirmScreenState
     try {
       final service = ref.read(consumerServiceProvider);
       final info = await service.getMerchantInfo(widget.merchantId);
+      final name = info['name'] as String? ?? 'Unknown Merchant';
       setState(() {
-        _merchantName = info['name'] as String? ?? 'Unknown Merchant';
+        _merchantName = name;
         _loadingMerchant = false;
       });
+      // Pre-populate description with an AI-style default based on merchant type
+      if (_descriptionController.text.isEmpty) {
+        _descriptionController.text = _defaultDescription(name);
+      }
     } catch (e) {
       setState(() {
         _error = 'Could not find merchant: ${e.toString()}';
@@ -135,9 +155,9 @@ class _ConsumerPayConfirmScreenState
       return;
     }
 
-    // Anomaly check
+    // Anomaly check — always runs (description field is always populated)
     final desc = _descriptionController.text.trim();
-    if (desc.isNotEmpty && _merchantName != null) {
+    if (_merchantName != null) {
       final warning = _checkAnomaly(_merchantName!, desc);
       if (warning != null) {
         final proceed = await _showAnomalyDialog(warning);
@@ -152,11 +172,10 @@ class _ConsumerPayConfirmScreenState
 
     try {
       final service = ref.read(consumerServiceProvider);
-      final description = desc.isEmpty ? null : desc;
       final result = await service.consumerPay(
         widget.merchantId,
         amount,
-        description: description,
+        description: desc.isEmpty ? null : desc,
         preferredRail: _selectedRail,
       );
       final status = result['status'] as String?;
@@ -257,8 +276,8 @@ class _ConsumerPayConfirmScreenState
                       TextField(
                         controller: _descriptionController,
                         decoration: const InputDecoration(
-                          labelText: 'Description (optional)',
-                          hintText: 'e.g. Coffee order',
+                          labelText: 'Description',
+                          hintText: 'What is this payment for?',
                           border: OutlineInputBorder(),
                         ),
                       ),

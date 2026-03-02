@@ -107,9 +107,9 @@ class TransactionTile extends StatelessWidget {
                 ),
             ],
           ),
-          if (transaction.description?.isNotEmpty == true)
+          if (transaction.description.isNotEmpty)
             Text(
-              transaction.description!,
+              transaction.description,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
                     color: Colors.grey.shade600,

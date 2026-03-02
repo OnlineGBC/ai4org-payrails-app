@@ -11,6 +11,7 @@ from app.services.rail_selector import select_rail
 from app.services.bank.mock_bank import mock_bank_service
 from app.services.bank.schemas import TransferRequest
 from app.services.ledger_service import record_debit, record_credit
+from app.services.wallet_service import wallet_credit
 from app.services.event_service import log_event
 from app.services import description_service, notification_service
 
@@ -103,6 +104,17 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
         db.commit()
         record_debit(db, payload.sender_merchant_id, settled_amount, txn.id, "Payment sent")
         record_credit(db, payload.receiver_merchant_id, settled_amount, txn.id, "Payment received")
+
+        # If receiver merchant is linked to a consumer user, also credit their wallet
+        receiver_consumer = db.query(User).filter(
+            User.merchant_id == payload.receiver_merchant_id, User.role == "user"
+        ).first()
+        if receiver_consumer:
+            wallet_credit(db, receiver_consumer.id, settled_amount, txn.id,
+                          f"Payment received from merchant {payload.sender_merchant_id}")
+            txn.receiver_user_id = receiver_consumer.id
+            db.commit()
+
         log_event(db, "payment.completed", "payment_service", txn.id)
     elif result.status == "failed":
         log_event(db, "payment.failed", "payment_service", txn.id, {

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -113,6 +114,11 @@ class _ConsumerPayConfirmScreenState
   bool _loadingMerchant = true;
   bool _paying = false;
   String? _error;
+  // Resolved payment target:
+  // - _resolvedMerchantId set   → pay merchant via /consumer/pay
+  // - _resolvedUserId set       → wallet-to-wallet via /wallet/send
+  String? _resolvedMerchantId;
+  String? _resolvedUserId;
 
   @override
   void initState() {
@@ -128,21 +134,64 @@ class _ConsumerPayConfirmScreenState
   }
 
   Future<void> _loadMerchant() async {
+    final service = ref.read(consumerServiceProvider);
+
+    // Step 1: try the ID as a merchant
     try {
-      final service = ref.read(consumerServiceProvider);
       final info = await service.getMerchantInfo(widget.merchantId);
       final name = info['name'] as String? ?? 'Unknown Merchant';
       setState(() {
         _merchantName = name;
+        _resolvedMerchantId = widget.merchantId;
         _loadingMerchant = false;
       });
-      // Pre-populate description with an AI-style default based on merchant type
       if (_descriptionController.text.isEmpty) {
         _descriptionController.text = _defaultDescription(name);
       }
-    } catch (e) {
+      return;
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 404) {
+        setState(() {
+          _error = 'Could not load merchant: ${e.message}';
+          _loadingMerchant = false;
+        });
+        return;
+      }
+      // 404 — fall through to user lookup
+    }
+
+    // Step 2: try the ID as a consumer user
+    try {
+      final userInfo = await service.getUserInfo(widget.merchantId);
+      final email = userInfo['email'] as String? ?? widget.merchantId;
+      final linkedMerchantId = userInfo['merchant_id'] as String?;
+
+      if (linkedMerchantId != null && linkedMerchantId.isNotEmpty) {
+        // User has a linked merchant — resolve to that merchant
+        final mInfo = await service.getMerchantInfo(linkedMerchantId);
+        final mName = mInfo['name'] as String? ?? email;
+        setState(() {
+          _merchantName = mName;
+          _resolvedMerchantId = linkedMerchantId;
+          _loadingMerchant = false;
+        });
+        if (_descriptionController.text.isEmpty) {
+          _descriptionController.text = _defaultDescription(mName);
+        }
+      } else {
+        // User has no linked merchant — use wallet-to-wallet send
+        setState(() {
+          _merchantName = email;
+          _resolvedUserId = widget.merchantId;
+          _loadingMerchant = false;
+        });
+        if (_descriptionController.text.isEmpty) {
+          _descriptionController.text = 'Payment to $email';
+        }
+      }
+    } catch (_) {
       setState(() {
-        _error = 'Could not find merchant: ${e.toString()}';
+        _error = 'Could not find merchant or user with ID: ${widget.merchantId}';
         _loadingMerchant = false;
       });
     }
@@ -172,12 +221,23 @@ class _ConsumerPayConfirmScreenState
 
     try {
       final service = ref.read(consumerServiceProvider);
-      final result = await service.consumerPay(
-        widget.merchantId,
-        amount,
-        description: desc.isEmpty ? null : desc,
-        preferredRail: _selectedRail,
-      );
+      final Map<String, dynamic> result;
+      if (_resolvedUserId != null) {
+        // Plain user with no merchant — wallet-to-wallet send
+        result = await service.sendToWallet(
+          _resolvedUserId!,
+          amount,
+          description: desc.isEmpty ? null : desc,
+        );
+      } else {
+        // Merchant payment (direct or via linked merchant)
+        result = await service.consumerPay(
+          _resolvedMerchantId ?? widget.merchantId,
+          amount,
+          description: desc.isEmpty ? null : desc,
+          preferredRail: _selectedRail,
+        );
+      }
       final status = result['status'] as String?;
 
       if (mounted) {
@@ -245,9 +305,11 @@ class _ConsumerPayConfirmScreenState
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const SizedBox(height: 16),
-                      Icon(Icons.store,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.primary),
+                      Icon(
+                        _resolvedUserId != null ? Icons.person : Icons.store,
+                        size: 64,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         _merchantName ?? 'Merchant',
@@ -255,7 +317,9 @@ class _ConsumerPayConfirmScreenState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'ID: ${widget.merchantId}',
+                        _resolvedUserId != null
+                            ? 'User: ${widget.merchantId}'
+                            : 'Merchant: ${_resolvedMerchantId ?? widget.merchantId}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontFamily: 'monospace',
                             ),

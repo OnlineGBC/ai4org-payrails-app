@@ -13,6 +13,11 @@ class ConsumerService {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getUserInfo(String userId) async {
+    final response = await _api.get('/consumer/users/$userId');
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> consumerPay(
     String merchantId,
     double amount, {

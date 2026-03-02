@@ -7,7 +7,8 @@ from app.models.bank_config import BankConfig
 from app.services.rail_selector import select_rail
 from app.services.bank.mock_bank import mock_bank_service
 from app.services.bank.schemas import TransferRequest
-from app.services.wallet_service import wallet_debit, get_wallet_balance
+from app.models.user import User
+from app.services.wallet_service import wallet_debit, wallet_credit, get_wallet_balance
 from app.services.ledger_service import record_credit
 from app.services.event_service import log_event
 from app.services import description_service, notification_service
@@ -108,6 +109,17 @@ def consumer_pay(
         db.commit()
         wallet_debit(db, user_id, settled_amount, txn.id, generated_desc)
         record_credit(db, merchant_id, settled_amount, txn.id, f"Payment from consumer {user_id}")
+
+        # If receiver merchant is linked to a consumer user, also credit their wallet
+        # so the money is visible in their wallet balance immediately
+        receiver_consumer = db.query(User).filter(
+            User.merchant_id == merchant_id, User.role == "user"
+        ).first()
+        if receiver_consumer:
+            wallet_credit(db, receiver_consumer.id, settled_amount, txn.id,
+                          f"Payment received from {user_id}")
+            txn.receiver_user_id = receiver_consumer.id
+
         db.commit()
         log_event(db, "consumer_payment.completed", "consumer_payment_service", txn.id)
     elif result.status == "failed":

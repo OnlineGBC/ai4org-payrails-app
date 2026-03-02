@@ -56,6 +56,19 @@ def get_consumer_balance(
     return WalletBalanceResponse(user_id=current_user.id, balance=balance)
 
 
+@router.get("/consumer/users/{user_id}")
+def get_consumer_user_info(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Look up a consumer user by ID — used by the pay flow to handle user IDs as payment targets."""
+    user = db.query(User).filter(User.id == user_id, User.role == "user").first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {"id": user.id, "email": user.email, "merchant_id": user.merchant_id}
+
+
 @router.post("/consumer/wallet/topup", response_model=WalletBalanceResponse)
 def topup_wallet(
     amount: Decimal,

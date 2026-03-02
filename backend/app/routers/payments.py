@@ -19,6 +19,11 @@ def send_payment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role != "merchant_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only merchant admins can initiate B2B payments",
+        )
     try:
         return create_payment(db, payload)
     except ValueError as e:

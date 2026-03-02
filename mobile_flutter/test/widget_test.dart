@@ -11,7 +11,7 @@ void main() {
       ),
     );
 
-    expect(find.text('PayRails'), findsOneWidget);
+    expect(find.text('GBC-ai4org PayRails'), findsOneWidget);
     expect(find.text('Sign In'), findsOneWidget);
     expect(find.byType(TextFormField), findsNWidgets(2));
   });

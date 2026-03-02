@@ -200,3 +200,66 @@ def full_seed_data(db_session):
         wallet_credit(db_session, u_id, Decimal("500.00"), description="Seed wallet")
 
     return {"merchants": merchants, "consumers": consumers}
+
+
+# ---------------------------------------------------------------------------
+# Consumer-merchant fixture data
+# (merchant_id, merchant_name, ein, user_id, email)
+# ---------------------------------------------------------------------------
+
+CONSUMER_MERCHANTS = [
+    ("merchant-consumer-001", "consumer1.test", "40-0000001",
+     "user-consumer-001", "consumer1@test.com"),
+    ("merchant-consumer-002", "consumer2.test", "40-0000002",
+     "user-consumer-002", "consumer2@test.com"),
+]
+
+
+@pytest.fixture
+def consumer_merchant_seed_data(db_session):
+    """
+    Two consumer users each linked to their own merchant record.
+    Includes BankConfig and bank accounts so /consumer/pay can process payments.
+    Consumer wallets seeded at $500 each.
+    """
+    from app.services.wallet_service import wallet_credit
+
+    bc = BankConfig(
+        id="bank-config-test",
+        bank_name="MockBank",
+        supported_rails="fednow,rtp,ach,card",
+        fednow_limit=Decimal("500000"),
+        rtp_limit=Decimal("1000000"),
+        ach_limit=Decimal("10000000"),
+        is_active=True,
+    )
+    db_session.add(bc)
+
+    for m_id, m_name, m_ein, u_id, u_email in CONSUMER_MERCHANTS:
+        m = Merchant(
+            id=m_id, name=m_name, ein=m_ein,
+            contact_email=u_email,
+            onboarding_status="active", kyb_status="approved",
+        )
+        u = User(
+            id=u_id, email=u_email,
+            hashed_password=hash_password("password123"),
+            role="user",
+            merchant_id=m_id,
+            phone=f"+1555900{u_id[-3:]}",
+        )
+        ba = BankAccount(
+            id=f"bank-acct-{m_id}",
+            merchant_id=m_id, bank_name="MockBank",
+            routing_number="021000021",
+            encrypted_account_number=encrypt_value(f"3000{u_id[-3:]}"),
+            account_type="checking", verification_status="verified",
+        )
+        db_session.add_all([m, u, ba])
+
+    db_session.commit()
+
+    for _, _, _, u_id, _ in CONSUMER_MERCHANTS:
+        wallet_credit(db_session, u_id, Decimal("500.00"), description="Seed wallet")
+
+    return {"consumer_merchants": CONSUMER_MERCHANTS}

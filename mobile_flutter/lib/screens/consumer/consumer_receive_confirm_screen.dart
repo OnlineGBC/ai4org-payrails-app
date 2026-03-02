@@ -134,9 +134,16 @@ class _ConsumerReceiveConfirmScreenState
                 TextFormField(
                   controller: _descriptionController,
                   decoration: const InputDecoration(
-                    labelText: 'Note (optional)',
+                    labelText: 'Description (Required)',
+                    hintText: 'What is this payment for?',
                     prefixIcon: Icon(Icons.notes),
                   ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a description';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 32),
 

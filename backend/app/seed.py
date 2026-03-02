@@ -180,33 +180,69 @@ def seed():
                 print(f"Credited $100,000 to {m_name}")
 
         # ------------------------------------------------------------------ #
-        # Consumer Users
+        # Consumer Merchant profiles (so consumers can receive QR payments)
         # ------------------------------------------------------------------ #
-        c1 = db.query(User).filter(User.email == "consumer1@test.com").first()
-        if not c1:
-            c1 = User(
-                id="user-consumer-001",
-                email="consumer1@test.com",
-                hashed_password=hash_password("password123"),
-                role="user",
-                phone="+15559000001",
-            )
-            db.add(c1)
-            db.commit()
-            print("Created Consumer: consumer1@test.com / password123")
+        CONSUMER_MERCHANTS = [
+            # (merchant_id, name, ein, routing, acct_num, user_id, email, phone)
+            ("merchant-consumer-001", "consumer1.test", "40-0000001",
+             "021000021", "3000000001",
+             "user-consumer-001", "consumer1@test.com", "+15559000001"),
+            ("merchant-consumer-002", "consumer2.test", "40-0000002",
+             "071000013", "3000000002",
+             "user-consumer-002", "consumer2@test.com", "+15559000002"),
+        ]
 
-        c2 = db.query(User).filter(User.email == "consumer2@test.com").first()
-        if not c2:
-            c2 = User(
-                id="user-consumer-002",
-                email="consumer2@test.com",
-                hashed_password=hash_password("password123"),
-                role="user",
-                phone="+15559000002",
-            )
-            db.add(c2)
-            db.commit()
-            print("Created Consumer: consumer2@test.com / password123")
+        for (m_id, m_name, m_ein, routing, acct_num,
+             u_id, u_email, u_phone) in CONSUMER_MERCHANTS:
+
+            # Create merchant record
+            if not db.query(Merchant).filter(Merchant.id == m_id).first():
+                m = Merchant(
+                    id=m_id,
+                    name=m_name,
+                    ein=m_ein,
+                    contact_email=u_email,
+                    onboarding_status="active",
+                    kyb_status="approved",
+                )
+                db.add(m)
+                db.commit()
+                print(f"Created Consumer Merchant: {m_name}")
+
+            # Create bank account for consumer merchant
+            ba_id = f"bank-acct-{m_id}"
+            if not db.query(BankAccount).filter(BankAccount.id == ba_id).first():
+                ba = BankAccount(
+                    id=ba_id,
+                    merchant_id=m_id,
+                    bank_name="Pinnacle BankTest",
+                    routing_number=routing,
+                    encrypted_account_number=encrypt_value(acct_num),
+                    account_type="checking",
+                    verification_status="verified",
+                )
+                db.add(ba)
+                db.commit()
+                print(f"Created BankAccount for consumer merchant {m_id}")
+
+            # Create or update consumer user with merchant_id
+            u = db.query(User).filter(User.email == u_email).first()
+            if not u:
+                u = User(
+                    id=u_id,
+                    email=u_email,
+                    hashed_password=hash_password("password123"),
+                    role="user",
+                    merchant_id=m_id,
+                    phone=u_phone,
+                )
+                db.add(u)
+                db.commit()
+                print(f"Created Consumer: {u_email} / password123")
+            elif not u.merchant_id:
+                u.merchant_id = m_id
+                db.commit()
+                print(f"Linked merchant {m_id} to existing user {u_email}")
 
         # Consumer wallet balances — $500 each
         if not db.query(Ledger).filter(Ledger.user_id == "user-consumer-001").first():

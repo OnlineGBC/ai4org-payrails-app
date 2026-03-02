@@ -11,10 +11,29 @@ class ConsumerQrScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).user;
-    final userId = user?.id ?? 'unknown';
-    final displayName = user?.email ?? userId;
-    final qrData =
-        'payrails://receive?user=${Uri.encodeComponent(userId)}&name=${Uri.encodeComponent(displayName)}';
+    final merchantId = user?.merchantId;
+    final displayName = user?.email ?? user?.id ?? 'unknown';
+
+    // If consumer has a merchant profile, use the merchant pay QR.
+    // Otherwise fall back to the wallet-receive QR.
+    final String qrData;
+    final String idLabel;
+    final String idValue;
+    final String copyLabel;
+
+    if (merchantId != null && merchantId.isNotEmpty) {
+      qrData = 'payrails://pay?merchant=${Uri.encodeComponent(merchantId)}';
+      idLabel = 'Merchant ID';
+      idValue = merchantId;
+      copyLabel = 'Copy Merchant ID';
+    } else {
+      final userId = user?.id ?? 'unknown';
+      qrData =
+          'payrails://receive?user=${Uri.encodeComponent(userId)}&name=${Uri.encodeComponent(displayName)}';
+      idLabel = 'User ID';
+      idValue = userId;
+      copyLabel = 'Copy User ID';
+    }
 
     return Scaffold(
       appBar: const PayRailsAppBar(title: 'My QR Code'),
@@ -31,7 +50,7 @@ class ConsumerQrScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Anyone with the PayRails app can scan this\nto send money directly to your wallet.',
+                'Anyone with the PayRails app can scan this\nto send money directly to your account.',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
@@ -60,11 +79,6 @@ class ConsumerQrScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Account',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
                 displayName,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -72,8 +86,13 @@ class ConsumerQrScreen extends ConsumerWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
+              Text(
+                idLabel,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 2),
               SelectableText(
-                userId,
+                idValue,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontFamily: 'monospace',
                       color: Colors.grey,
@@ -83,13 +102,13 @@ class ConsumerQrScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               TextButton.icon(
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: userId));
+                  Clipboard.setData(ClipboardData(text: idValue));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('User ID copied')),
+                    SnackBar(content: Text('$idLabel copied')),
                   );
                 },
                 icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy ID'),
+                label: Text(copyLabel),
               ),
             ],
           ),

@@ -8,8 +8,8 @@ class ApiConfig {
     if (envUrl == 'relative') return '';
     if (envUrl.isNotEmpty) return envUrl;
 
-    // Web: default to local uvicorn for dev
-    if (kIsWeb) return 'http://localhost:8000';
+    // Web: use machine IP so phones/external browsers can reach the backend
+    if (kIsWeb) return 'http://192.168.1.88:3000';
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://192.168.1.88:8080';
     }

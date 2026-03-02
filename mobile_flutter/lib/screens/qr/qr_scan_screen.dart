@@ -296,9 +296,11 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // On web, camera doesn't work reliably (requires HTTPS + browser support).
-    // Always use manual entry on web to avoid a blank screen.
-    final showManualEntry = kIsWeb || _cameraError;
+    // On web over plain HTTP, camera is blocked by the browser (requires HTTPS).
+    // Fall back to manual entry immediately. On HTTPS web (Docker) or native,
+    // let MobileScanner try and only fall back if it reports an error.
+    final bool isHttpWeb = kIsWeb && Uri.base.scheme != 'https';
+    final showManualEntry = isHttpWeb || _cameraError;
 
     return Scaffold(
       appBar: const PayRailsAppBar(title: 'Scan QR Code'),

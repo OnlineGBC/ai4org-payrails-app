@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/bank_account.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/bank_account_provider.dart';
 import '../../router/route_names.dart';
@@ -28,6 +29,40 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
     }
   }
 
+  Future<void> _pushVerify(BankAccount acct) async {
+    final user = ref.read(authStateProvider).user;
+    await context.push(
+      '${RouteNames.verifyBankAccount}'
+      '?merchantId=${user!.merchantId!}'
+      '&accountId=${acct.id}'
+      '&amount1=${acct.microDepositAmount1 ?? ""}'
+      '&amount2=${acct.microDepositAmount2 ?? ""}',
+    );
+    _reload();
+  }
+
+  Future<void> _addAccount() async {
+    final result = await context.push<BankAccount>(RouteNames.addBankAccount);
+    _reload();
+    // If a new unverified account was returned, navigate straight to verify
+    if (result != null && result.verificationStatus != 'verified' && mounted) {
+      await _pushVerify(result);
+    }
+  }
+
+  String _subtitle(BankAccount acct) {
+    switch (acct.verificationStatus) {
+      case 'micro_deposit_sent':
+        return 'Tap to verify — enter the two micro-deposit amounts';
+      case 'pending':
+        return 'Tap to verify this account';
+      case 'verified':
+        return 'Routing: ${acct.routingNumber} · ****${acct.accountNumberLast4 ?? ""}';
+      default:
+        return 'Routing: ${acct.routingNumber} · ****${acct.accountNumberLast4 ?? ""}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final accountsState = ref.watch(bankAccountListProvider);
@@ -35,7 +70,7 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
     return Scaffold(
       appBar: const PayRailsAppBar(title: 'Bank Accounts'),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(RouteNames.addBankAccount).then((_) => _reload()),
+        onPressed: _addAccount,
         tooltip: 'Add Bank Account',
         child: const Icon(Icons.add),
       ),
@@ -49,24 +84,41 @@ class _BankAccountListScreenState extends ConsumerState<BankAccountListScreen> {
             itemCount: accounts.length,
             itemBuilder: (context, index) {
               final acct = accounts[index];
+              final needsVerification = acct.verificationStatus != 'verified';
               return Card(
                 child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.account_balance)),
+                  leading: CircleAvatar(
+                    backgroundColor: needsVerification
+                        ? Colors.orange.shade50
+                        : Colors.green.shade50,
+                    child: Icon(
+                      Icons.account_balance,
+                      color: needsVerification ? Colors.orange : Colors.green,
+                    ),
+                  ),
                   title: Text(acct.bankName ?? 'Bank Account'),
                   subtitle: Text(
-                    'Routing: ${acct.routingNumber} | ****${acct.accountNumberLast4 ?? ""}',
+                    _subtitle(acct),
+                    style: TextStyle(
+                      color: needsVerification ? Colors.orange.shade700 : null,
+                      fontSize: 12,
+                    ),
                   ),
-                  trailing: StatusChip(status: acct.verificationStatus),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StatusChip(status: acct.verificationStatus),
+                      if (needsVerification)
+                        const Icon(Icons.chevron_right, color: Colors.grey),
+                    ],
+                  ),
                   onTap: () {
                     if (acct.verificationStatus == 'verified') {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Already verified')),
+                        const SnackBar(content: Text('Account already verified')),
                       );
                     } else {
-                      final user = ref.read(authStateProvider).user;
-                      context.push(
-                        '${RouteNames.verifyBankAccount}?merchantId=${user!.merchantId!}&accountId=${acct.id}&amount1=${acct.microDepositAmount1 ?? ""}&amount2=${acct.microDepositAmount2 ?? ""}',
-                      ).then((_) => _reload());
+                      _pushVerify(acct);
                     }
                   },
                 ),

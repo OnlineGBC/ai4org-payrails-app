@@ -19,16 +19,25 @@ class TransactionListNotifier extends StateNotifier<AsyncValue<List<Transaction>
   int _page = 1;
   bool _hasMore = true;
   String? _merchantId;
+  String? _statusFilter;
+  String? _railFilter;
 
   TransactionListNotifier(this._service) : super(const AsyncValue.loading());
 
-  Future<void> load(String merchantId) async {
+  Future<void> load(String merchantId, {String? status, String? rail}) async {
     _merchantId = merchantId;
+    _statusFilter = status;
+    _railFilter = rail;
     _page = 1;
     _hasMore = true;
     state = const AsyncValue.loading();
     try {
-      final items = await _service.listPayments(merchantId: merchantId, page: 1);
+      final items = await _service.listPayments(
+        merchantId: merchantId,
+        page: 1,
+        status: status,
+        rail: rail,
+      );
       _hasMore = items.length >= 20;
       state = AsyncValue.data(items);
     } catch (e, st) {
@@ -40,7 +49,12 @@ class TransactionListNotifier extends StateNotifier<AsyncValue<List<Transaction>
     if (!_hasMore || _merchantId == null) return;
     _page++;
     try {
-      final items = await _service.listPayments(merchantId: _merchantId, page: _page);
+      final items = await _service.listPayments(
+        merchantId: _merchantId,
+        page: _page,
+        status: _statusFilter,
+        rail: _railFilter,
+      );
       _hasMore = items.length >= 20;
       final current = state.value ?? [];
       state = AsyncValue.data([...current, ...items]);

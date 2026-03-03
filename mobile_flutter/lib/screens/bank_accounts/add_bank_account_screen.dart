@@ -41,7 +41,7 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
 
     try {
       final service = ref.read(merchantServiceProvider);
-      await service.addBankAccount(
+      final account = await service.addBankAccount(
         user!.merchantId!,
         routingNumber: _routingController.text.trim(),
         accountNumber: _accountController.text.trim(),
@@ -51,10 +51,8 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bank account added. Micro-deposits sent.')),
-        );
-        context.pop();
+        // Return the new account to the caller so it can navigate to verification
+        context.pop(account);
       }
     } catch (e) {
       setState(() => _error = 'Failed to add account: $e');

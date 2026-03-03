@@ -16,6 +16,8 @@ class PaymentListScreen extends ConsumerStatefulWidget {
 
 class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
   final _scrollController = ScrollController();
+  String? _statusFilter;
+  String? _railFilter;
 
   @override
   void initState() {
@@ -33,7 +35,11 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
   void _loadData() {
     final user = ref.read(authStateProvider).user;
     if (user?.merchantId != null) {
-      ref.read(transactionListProvider.notifier).load(user!.merchantId!);
+      ref.read(transactionListProvider.notifier).load(
+            user!.merchantId!,
+            status: _statusFilter,
+            rail: _railFilter,
+          );
     }
   }
 
@@ -44,6 +50,122 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
     }
   }
 
+  bool get _hasActiveFilters => _statusFilter != null || _railFilter != null;
+
+  Future<void> _showFilterSheet() async {
+    // Local copies so the sheet can mutate without affecting the screen until Apply
+    String? tempStatus = _statusFilter;
+    String? tempRail = _railFilter;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Filter Transactions',
+                    style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: 20),
+
+                // Status filter
+                Text('Status', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final s in <String?>[
+                      null,
+                      'pending',
+                      'processing',
+                      'completed',
+                      'failed',
+                      'cancelled',
+                    ])
+                      ChoiceChip(
+                        label: Text(s == null
+                            ? 'All'
+                            : '${s[0].toUpperCase()}${s.substring(1)}'),
+                        selected: tempStatus == s,
+                        onSelected: (_) =>
+                            setSheetState(() => tempStatus = s),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Rail filter
+                Text('Rail', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final r in <String?>[null, 'fednow', 'rtp', 'ach'])
+                      ChoiceChip(
+                        label: Text(r == null ? 'All' : r.toUpperCase()),
+                        selected: tempRail == r,
+                        onSelected: (_) =>
+                            setSheetState(() => tempRail = r),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setSheetState(() {
+                          tempStatus = null;
+                          tempRail = null;
+                        }),
+                        child: const Text('Clear'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          setState(() {
+                            _statusFilter = tempStatus;
+                            _railFilter = tempRail;
+                          });
+                          _loadData();
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final txnState = ref.watch(transactionListProvider);
@@ -52,6 +174,28 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       appBar: PayRailsAppBar(
         title: 'Transactions',
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                tooltip: 'Filter',
+                onPressed: _showFilterSheet,
+              ),
+              if (_hasActiveFilters)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
@@ -67,7 +211,34 @@ class _PaymentListScreenState extends ConsumerState<PaymentListScreen> {
       body: txnState.when(
         data: (transactions) {
           if (transactions.isEmpty) {
-            return const Center(child: Text('No transactions yet'));
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.receipt_long, size: 48, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text(
+                    _hasActiveFilters
+                        ? 'No transactions match the current filters'
+                        : 'No transactions yet',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  if (_hasActiveFilters) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _statusFilter = null;
+                          _railFilter = null;
+                        });
+                        _loadData();
+                      },
+                      child: const Text('Clear filters'),
+                    ),
+                  ],
+                ],
+              ),
+            );
           }
           return ListView.separated(
             controller: _scrollController,

@@ -44,6 +44,49 @@ def test_submit_kyb(client, seed_data):
     assert resp.json()["onboarding_status"] == "active"
 
 
+def test_submit_kyb_with_optional_fields(client, seed_data):
+    headers = get_auth_header()
+    create_resp = client.post("/merchants", json={
+        "name": "FullKYBCo",
+        "contact_email": "fullkyb@co.com",
+    }, headers=headers)
+    mid = create_resp.json()["id"]
+    resp = client.post(f"/merchants/{mid}/kyb", json={
+        "ein": "99-8887776",
+        "business_name": "FullKYBCo",
+        "business_address": "123 Main St, NY",
+        "representative_name": "Jane Doe",
+        "representative_ssn_last4": "5678",
+    }, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["kyb_status"] == "approved"
+    assert resp.json()["ein"] == "99-8887776"
+
+
+def test_submit_kyb_missing_required_fields(client, seed_data):
+    headers = get_auth_header()
+    create_resp = client.post("/merchants", json={
+        "name": "NoEINCo",
+        "contact_email": "noein@co.com",
+    }, headers=headers)
+    mid = create_resp.json()["id"]
+    # Missing 'ein' — should fail Pydantic validation
+    resp = client.post(f"/merchants/{mid}/kyb", json={
+        "business_name": "NoEINCo",
+    }, headers=headers)
+    assert resp.status_code == 422
+
+
+def test_submit_kyb_nonexistent_merchant(client, seed_data):
+    headers = get_auth_header()
+    resp = client.post("/merchants/does-not-exist/kyb", json={
+        "ein": "11-2223334",
+        "business_name": "Ghost Co",
+    }, headers=headers)
+    assert resp.status_code == 400
+    assert "not found" in resp.json()["detail"].lower()
+
+
 def test_add_bank_account(client, seed_data):
     headers = get_auth_header()
     resp = client.post("/merchants/merchant-001/bank-accounts", json={

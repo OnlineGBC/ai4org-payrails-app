@@ -62,4 +62,26 @@ class MerchantService {
     );
     return BankAccount.fromJson(response.data);
   }
+
+  Future<Merchant> submitKyb(
+    String merchantId, {
+    required String ein,
+    required String businessName,
+    String? businessAddress,
+    String? representativeName,
+    String? representativeSsnLast4,
+  }) async {
+    final response = await _api.post(
+      '${ApiConfig.merchants}/$merchantId/kyb',
+      data: {
+        'ein': ein,
+        'business_name': businessName,
+        if (businessAddress != null) 'business_address': businessAddress,
+        if (representativeName != null) 'representative_name': representativeName,
+        if (representativeSsnLast4 != null)
+          'representative_ssn_last4': representativeSsnLast4,
+      },
+    );
+    return Merchant.fromJson(response.data);
+  }
 }

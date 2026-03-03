@@ -22,6 +22,8 @@ class ApiConfig {
   static const String login = '/auth/login';
   static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
+  static const String passwordResetRequest = '/auth/password-reset/request';
+  static const String passwordResetConfirm = '/auth/password-reset/confirm';
 
   // Payments
   static const String payments = '/payments';

@@ -19,4 +19,6 @@ class RouteNames {
   static const String consumerSettings = '/consumer/settings';
   static const String consumerQr = '/consumer/qr';
   static const String consumerReceiveConfirm = '/consumer/receive-confirm';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
 }

@@ -86,6 +86,58 @@ def test_register_merchant_duplicate_email(client):
     assert resp.status_code == 409
 
 
+def test_password_reset_request_known_email(client):
+    client.post("/auth/register", json={"email": "resetme@test.com", "password": "secret123"})
+    resp = client.post("/auth/password-reset/request", json={"email": "resetme@test.com"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["reset_token"] is not None
+
+
+def test_password_reset_request_unknown_email(client):
+    resp = client.post("/auth/password-reset/request", json={"email": "ghost@test.com"})
+    assert resp.status_code == 200
+    assert resp.json()["reset_token"] is None
+
+
+def test_password_reset_confirm_success(client):
+    client.post("/auth/register", json={"email": "resetok@test.com", "password": "secret123"})
+    req = client.post("/auth/password-reset/request", json={"email": "resetok@test.com"})
+    token = req.json()["reset_token"]
+    resp = client.post("/auth/password-reset/confirm", json={
+        "token": token,
+        "new_password": "newpassword1",
+    })
+    assert resp.status_code == 200
+    # Old password no longer works
+    login_old = client.post("/auth/login", json={"email": "resetok@test.com", "password": "secret123"})
+    assert login_old.status_code == 401
+    # New password works
+    login_new = client.post("/auth/login", json={"email": "resetok@test.com", "password": "newpassword1"})
+    assert login_new.status_code == 200
+
+
+def test_password_reset_confirm_invalid_token(client):
+    resp = client.post("/auth/password-reset/confirm", json={
+        "token": "not.a.valid.token",
+        "new_password": "newpassword1",
+    })
+    assert resp.status_code == 400
+    assert "invalid" in resp.json()["detail"].lower()
+
+
+def test_password_reset_confirm_short_password(client):
+    client.post("/auth/register", json={"email": "shortpw@test.com", "password": "secret123"})
+    req = client.post("/auth/password-reset/request", json={"email": "shortpw@test.com"})
+    token = req.json()["reset_token"]
+    resp = client.post("/auth/password-reset/confirm", json={
+        "token": token,
+        "new_password": "abc",
+    })
+    assert resp.status_code == 400
+    assert "8 characters" in resp.json()["detail"]
+
+
 def test_register_merchant_duplicate_ein(client):
     client.post("/auth/register/merchant", json={
         "email": "biz3@test.com",

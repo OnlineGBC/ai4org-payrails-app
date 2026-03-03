@@ -5,12 +5,17 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.merchant import Merchant
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate, TokenResponse, MerchantRegisterPayload
+from app.schemas.user import (
+    UserCreate, UserLogin, UserResponse, UserUpdate, TokenResponse,
+    MerchantRegisterPayload, PasswordResetRequest, PasswordResetConfirm,
+    PasswordResetRequestResponse,
+)
 from app.services.auth_service import (
     hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
+    create_reset_token,
     decode_token,
 )
 
@@ -109,6 +114,43 @@ def refresh(refresh_token: str, db: Session = Depends(get_db)):
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
     )
+
+
+@router.post("/password-reset/request", response_model=PasswordResetRequestResponse)
+def request_password_reset(payload: PasswordResetRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        # Don't reveal whether the email exists
+        return PasswordResetRequestResponse(
+            message="If that email is registered, a reset code has been sent."
+        )
+    token = create_reset_token(payload.email)
+    return PasswordResetRequestResponse(
+        message="Reset code generated. In production this would be emailed.",
+        reset_token=token,
+    )
+
+
+@router.post("/password-reset/confirm")
+def confirm_password_reset(payload: PasswordResetConfirm, db: Session = Depends(get_db)):
+    decoded = decode_token(payload.token)
+    if decoded is None or decoded.get("type") != "reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+    email = decoded.get("sub")
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if len(payload.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters",
+        )
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Password reset successfully"}
 
 
 @router.get("/me", response_model=UserResponse)

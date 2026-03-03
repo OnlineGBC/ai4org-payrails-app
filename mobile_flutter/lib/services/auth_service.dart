@@ -72,6 +72,23 @@ class AuthService {
     return User.fromJson(response.data);
   }
 
+  /// Returns `{message, reset_token}`. `reset_token` is non-null only when the
+  /// email is registered (MVP demo — in production this would be emailed).
+  Future<Map<String, dynamic>> requestPasswordReset(String email) async {
+    final response = await _api.post(
+      ApiConfig.passwordResetRequest,
+      data: {'email': email},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> confirmPasswordReset(String token, String newPassword) async {
+    await _api.post(ApiConfig.passwordResetConfirm, data: {
+      'token': token,
+      'new_password': newPassword,
+    });
+  }
+
   Future<User> updateName(String firstName, String lastName) async {
     final response = await _api.patch(ApiConfig.me, data: {
       'first_name': firstName,

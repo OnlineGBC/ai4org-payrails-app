@@ -48,3 +48,17 @@ class MerchantRegisterPayload(BaseModel):
     business_name: str
     ein: str
     contact_email: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+
+class PasswordResetRequestResponse(BaseModel):
+    message: str
+    reset_token: Optional[str] = None

@@ -29,6 +29,15 @@ def create_refresh_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
+def create_reset_token(email: str) -> str:
+    data = {
+        "sub": email,
+        "type": "reset",
+        "exp": datetime.utcnow() + timedelta(minutes=15),
+    }
+    return jwt.encode(data, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
 def decode_token(token: str) -> dict:
     try:
         payload = jwt.decode(

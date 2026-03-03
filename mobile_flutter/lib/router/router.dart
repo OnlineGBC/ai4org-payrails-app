@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
+import '../screens/auth/reset_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/payments/payment_list_screen.dart';
 import '../screens/payments/payment_detail_screen.dart';
@@ -32,7 +34,9 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
       final isAuthRoute = state.matchedLocation == RouteNames.login ||
-          state.matchedLocation == RouteNames.register;
+          state.matchedLocation == RouteNames.register ||
+          state.matchedLocation == RouteNames.forgotPassword ||
+          state.matchedLocation == RouteNames.resetPassword;
 
       // Still checking stored token — don't redirect anywhere yet
       if (authState.status == AuthStatus.unknown) {
@@ -91,6 +95,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.register,
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.resetPassword,
+        builder: (context, state) => ResetPasswordScreen(
+          initialToken: state.uri.queryParameters['token'],
+        ),
       ),
       // Merchant shell route
       ShellRoute(

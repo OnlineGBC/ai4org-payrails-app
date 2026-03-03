@@ -62,6 +62,70 @@ def test_list_payments(client, seed_data):
     assert resp.json()["total"] >= 3
 
 
+def test_filter_by_status(client, seed_data, db_session):
+    """Filter by status returns only matching transactions."""
+    from app.models.transaction import Transaction
+    headers = get_auth_header()
+    # Create a payment and force it to 'completed'
+    resp = client.post("/payments", json={
+        "sender_merchant_id": "merchant-001",
+        "receiver_merchant_id": "merchant-002",
+        "amount": "11.00",
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=headers)
+    pid = resp.json()["id"]
+    txn = db_session.query(Transaction).filter(Transaction.id == pid).first()
+    txn.status = "completed"
+    db_session.commit()
+
+    completed = client.get("/payments?status=completed", headers=headers)
+    assert completed.status_code == 200
+    statuses = [t["status"] for t in completed.json()["items"]]
+    assert all(s == "completed" for s in statuses)
+    assert any(t["id"] == pid for t in completed.json()["items"])
+
+    cancelled = client.get("/payments?status=cancelled", headers=headers)
+    assert cancelled.status_code == 200
+    assert all(t["id"] != pid for t in cancelled.json()["items"])
+
+
+def test_filter_by_rail(client, seed_data):
+    """Filter by rail returns only transactions on that rail."""
+    headers = get_auth_header()
+    client.post("/payments", json={
+        "sender_merchant_id": "merchant-001",
+        "receiver_merchant_id": "merchant-002",
+        "amount": "12.00",
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=headers)
+    resp = client.get("/payments?rail=fednow", headers=headers)
+    assert resp.status_code == 200
+    for txn in resp.json()["items"]:
+        assert txn["rail"] == "fednow"
+
+
+def test_filter_combined_status_and_rail(client, seed_data, db_session):
+    """Combined status+rail filter narrows results to both criteria."""
+    from app.models.transaction import Transaction
+    headers = get_auth_header()
+    resp = client.post("/payments", json={
+        "sender_merchant_id": "merchant-001",
+        "receiver_merchant_id": "merchant-002",
+        "amount": "13.00",
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=headers)
+    pid = resp.json()["id"]
+    txn = db_session.query(Transaction).filter(Transaction.id == pid).first()
+    txn.status = "failed"
+    db_session.commit()
+
+    result = client.get("/payments?status=failed&rail=fednow", headers=headers)
+    assert result.status_code == 200
+    for t in result.json()["items"]:
+        assert t["status"] == "failed"
+        assert t["rail"] == "fednow"
+
+
 def test_balance(client, seed_data):
     headers = get_auth_header()
     resp = client.get("/payments/balance?merchant_id=merchant-001", headers=headers)

@@ -13,8 +13,14 @@ class ConsumerSettingsScreen extends ConsumerStatefulWidget {
 
 class _ConsumerSettingsScreenState
     extends ConsumerState<ConsumerSettingsScreen> {
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
+
+  bool _savingName = false;
+  String? _nameError;
+  String? _nameSuccess;
 
   bool _savingEmail = false;
   String? _emailError;
@@ -28,15 +34,38 @@ class _ConsumerSettingsScreenState
   void initState() {
     super.initState();
     final user = ref.read(authStateProvider).user;
+    _firstNameController = TextEditingController(text: user?.firstName ?? '');
+    _lastNameController = TextEditingController(text: user?.lastName ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
   }
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveName() async {
+    setState(() {
+      _savingName = true;
+      _nameError = null;
+      _nameSuccess = null;
+    });
+    try {
+      await ref.read(authStateProvider.notifier).updateName(
+            _firstNameController.text.trim(),
+            _lastNameController.text.trim(),
+          );
+      if (mounted) setState(() => _nameSuccess = 'Name saved.');
+    } catch (e) {
+      if (mounted) setState(() => _nameError = 'Failed to save: $e');
+    } finally {
+      if (mounted) setState(() => _savingName = false);
+    }
   }
 
   Future<void> _saveEmail() async {
@@ -101,6 +130,71 @@ class _ConsumerSettingsScreenState
                     leading: const Icon(Icons.email),
                     title: Text(user?.email ?? 'Not logged in'),
                     subtitle: const Text('Consumer account'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Name
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Name', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Your name appears on transaction tiles.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _firstNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'First name',
+                      prefixIcon: Icon(Icons.person_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _lastNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Last name',
+                      prefixIcon: Icon(Icons.person_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (_nameError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(_nameError!,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontSize: 12)),
+                    ),
+                  if (_nameSuccess != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(_nameSuccess!,
+                          style: const TextStyle(
+                              color: Colors.green, fontSize: 12)),
+                    ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _savingName ? null : _saveName,
+                      child: _savingName
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Save Name'),
+                    ),
                   ),
                 ],
               ),

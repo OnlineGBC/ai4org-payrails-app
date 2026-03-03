@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 import '../models/wallet_balance.dart';
 import '../models/transaction.dart';
+import '../models/bank_account.dart';
 import 'api_client.dart';
 
 class ConsumerService {
@@ -46,6 +47,22 @@ class ConsumerService {
       queryParameters: {'amount': amount.toString()},
     );
     return WalletBalance.fromJson(response.data);
+  }
+
+  Future<WalletFundResult> fundWallet(
+      String bankAccountId, double amount) async {
+    final response = await _api.post('/consumer/wallet/fund', data: {
+      'bank_account_id': bankAccountId,
+      'amount': amount.toString(),
+    });
+    return WalletFundResult.fromJson(response.data);
+  }
+
+  Future<List<BankAccount>> listBankAccounts(String merchantId) async {
+    final response =
+        await _api.get('/merchants/$merchantId/bank-accounts');
+    final items = response.data as List;
+    return items.map((e) => BankAccount.fromJson(e)).toList();
   }
 
   Future<Map<String, dynamic>> sendToWallet(

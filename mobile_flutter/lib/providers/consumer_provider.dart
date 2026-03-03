@@ -69,4 +69,17 @@ class WalletBalanceNotifier extends StateNotifier<AsyncValue<WalletBalance?>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  /// Funds the wallet via a mock ACH pull from a verified bank account.
+  /// Returns the [WalletFundResult] so callers can inspect success/failure.
+  Future<WalletFundResult> fundWallet(
+      String bankAccountId, double amount) async {
+    final result = await _service.fundWallet(bankAccountId, amount);
+    if (result.succeeded) {
+      state = AsyncValue.data(
+        WalletBalance(userId: result.userId, balance: result.balance),
+      );
+    }
+    return result;
+  }
 }

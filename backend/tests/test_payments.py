@@ -88,6 +88,51 @@ def test_cancel_payment(client, seed_data):
         assert resp.status_code == 200
 
 
+def test_cancel_completed_payment_returns_400(client, seed_data, db_session):
+    """A completed payment cannot be cancelled — backend raises 400."""
+    from app.models.transaction import Transaction
+    headers = get_auth_header()
+    create_resp = client.post("/payments", json={
+        "sender_merchant_id": "merchant-001",
+        "receiver_merchant_id": "merchant-002",
+        "amount": "30.00",
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=headers)
+    pid = create_resp.json()["id"]
+    # Force status to 'completed' so cancel should be rejected
+    txn = db_session.query(Transaction).filter(Transaction.id == pid).first()
+    txn.status = "completed"
+    db_session.commit()
+    resp = client.post(f"/payments/{pid}/cancel", headers=headers)
+    assert resp.status_code == 400
+    assert "cannot cancel" in resp.json()["detail"].lower()
+
+
+def test_cancel_pending_payment_succeeds(client, seed_data, db_session):
+    """Forcing a payment to 'pending' and then cancelling succeeds."""
+    from app.models.transaction import Transaction
+    headers = get_auth_header()
+    create_resp = client.post("/payments", json={
+        "sender_merchant_id": "merchant-001",
+        "receiver_merchant_id": "merchant-002",
+        "amount": "40.00",
+        "idempotency_key": str(uuid.uuid4()),
+    }, headers=headers)
+    pid = create_resp.json()["id"]
+    txn = db_session.query(Transaction).filter(Transaction.id == pid).first()
+    txn.status = "pending"
+    db_session.commit()
+    resp = client.post(f"/payments/{pid}/cancel", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "cancelled"
+
+
+def test_cancel_nonexistent_payment_returns_400(client, seed_data):
+    headers = get_auth_header()
+    resp = client.post("/payments/does-not-exist/cancel", headers=headers)
+    assert resp.status_code == 400
+
+
 def test_payment_no_auth(client):
     resp = client.post("/payments", json={
         "sender_merchant_id": "merchant-001",

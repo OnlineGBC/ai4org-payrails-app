@@ -20,6 +20,8 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
   Transaction? _transaction;
   bool _isLoading = true;
   String? _error;
+  bool _cancelling = false;
+  String? _cancelError;
 
   @override
   void initState() {
@@ -43,6 +45,62 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
     }
   }
 
+  Future<void> _cancelPayment() async {
+    final txn = _transaction!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Payment'),
+        content: Text(
+          'Cancel this payment of '
+          '\$${NumberFormat('#,##0.00').format(txn.amount)}?\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No, keep it'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes, cancel it'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() {
+      _cancelling = true;
+      _cancelError = null;
+    });
+    try {
+      final service = ref.read(paymentServiceProvider);
+      final updated = await service.cancelPayment(widget.paymentId);
+      if (mounted) {
+        setState(() {
+          _transaction = updated;
+          _cancelling = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment cancelled.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _cancelling = false;
+          _cancelError = 'Could not cancel. The payment may have already completed.';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,6 +115,8 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
 
   Widget _buildDetail() {
     final txn = _transaction!;
+    final cancellable = txn.status == 'pending' || txn.status == 'processing';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -87,10 +147,8 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
                       style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: 12),
                   _timelineStep('Created', true),
-                  _timelineStep('Processing',
-                      txn.status != 'pending'),
-                  _timelineStep(
-                      'Completed', txn.status == 'completed'),
+                  _timelineStep('Processing', txn.status != 'pending'),
+                  _timelineStep('Completed', txn.status == 'completed'),
                   if (txn.status == 'failed')
                     _timelineStep('Failed', true, isError: true),
                   if (txn.status == 'cancelled')
@@ -110,8 +168,10 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
                   _detailRow('Transaction ID', txn.id),
                   if (txn.description.isNotEmpty)
                     _detailRow('Description', txn.description),
-                  _detailRow('Sender', txn.senderMerchantId ?? txn.senderUserId ?? '—'),
-                  _detailRow('Receiver', txn.receiverMerchantId ?? txn.receiverUserId ?? '—'),
+                  _detailRow('Sender',
+                      txn.senderMerchantId ?? txn.senderUserId ?? '—'),
+                  _detailRow('Receiver',
+                      txn.receiverMerchantId ?? txn.receiverUserId ?? '—'),
                   _detailRow('Rail', ''),
                   if (txn.rail != null)
                     Padding(
@@ -131,6 +191,46 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
               ),
             ),
           ),
+
+          // Cancel section — only for cancellable statuses
+          if (cancellable) ...[
+            const SizedBox(height: 24),
+            if (_cancelError != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    border: Border.all(color: Colors.red.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _cancelError!,
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                  ),
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: _cancelling
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cancel_outlined),
+                label: const Text('Cancel Payment'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(
+                      color: Theme.of(context).colorScheme.error),
+                ),
+                onPressed: _cancelling ? null : _cancelPayment,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -149,7 +249,8 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
                     color: Colors.grey, fontWeight: FontWeight.w500)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(value,
+                style: const TextStyle(fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -174,7 +275,8 @@ class _PaymentDetailScreenState extends ConsumerState<PaymentDetailScreen> {
           Text(label,
               style: TextStyle(
                 color: active ? Colors.black87 : Colors.grey,
-                fontWeight: active ? FontWeight.w500 : FontWeight.normal,
+                fontWeight:
+                    active ? FontWeight.w500 : FontWeight.normal,
               )),
         ],
       ),

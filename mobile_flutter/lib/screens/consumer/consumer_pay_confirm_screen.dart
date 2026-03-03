@@ -15,9 +15,13 @@ String _defaultDescription(String merchantName) {
   if (lower.contains('boostmobile')) return 'Mobile phone top-up';
   if (lower.contains('walmart') || lower.contains('foodlion') ||
       lower.contains('aldi') || lower.contains('costco') ||
-      lower.contains('dollargeneral')) return 'Grocery purchase';
+      lower.contains('dollargeneral')) {
+    return 'Grocery purchase';
+  }
   if (lower.contains('mcdonalds') || lower.contains('burgerking') ||
-      lower.contains('subway')) return 'Meal / food order';
+      lower.contains('subway')) {
+    return 'Meal / food order';
+  }
   if (lower.contains('target') || lower.contains('nike')) return 'Retail purchase';
   return 'Payment';
 }
@@ -279,7 +283,7 @@ class _ConsumerPayConfirmScreenState
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedRail,
+                        initialValue: _selectedRail,
                         decoration: const InputDecoration(
                           labelText: 'Preferred Rail (optional)',
                           prefixIcon: Icon(Icons.route),

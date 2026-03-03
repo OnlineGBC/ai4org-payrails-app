@@ -31,7 +31,7 @@ void main() {
   group('Issue 1 — copyToClipboard: success path', () {
     setUp(() {
       // Allow clipboard writes to succeed
-      tester_binding_setClipboard(succeed: true);
+      testerBindingSetClipboard(succeed: true);
     });
 
     testWidgets('shows SnackBar with "<label> copied" on success',
@@ -122,4 +122,4 @@ void _setupClipboard(WidgetTester tester, {required bool succeed}) {
 }
 
 // Dummy top-level so the setUp group compiles — actual setup is per-test.
-void tester_binding_setClipboard({required bool succeed}) {}
+void testerBindingSetClipboard({required bool succeed}) {}

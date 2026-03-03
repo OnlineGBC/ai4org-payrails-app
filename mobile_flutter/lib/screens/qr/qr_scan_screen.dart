@@ -74,7 +74,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
     });
 
     try {
-      final merchant = await ref.read(merchantServiceProvider).getMerchant(merchantId!);
+      final merchant = await ref.read(merchantServiceProvider).getMerchant(merchantId);
       if (mounted) setState(() => _merchantName = merchant.name);
     } catch (_) {
       // Name lookup failed — confirmation panel still shows just the ID

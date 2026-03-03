@@ -10,6 +10,8 @@ def test_register(client):
     data = resp.json()
     assert data["email"] == "new@test.com"
     assert data["role"] == "user"
+    # Consumer registration now creates a linked merchant
+    assert data["merchant_id"] is not None
 
 
 def test_register_duplicate(client):
@@ -54,3 +56,49 @@ def test_refresh(client):
     resp = client.post(f"/auth/refresh?refresh_token={refresh_token}")
     assert resp.status_code == 200
     assert "access_token" in resp.json()
+
+
+def test_register_merchant(client):
+    resp = client.post("/auth/register/merchant", json={
+        "email": "biz@test.com",
+        "password": "secret123",
+        "business_name": "Acme Corp",
+        "ein": "12-3456789",
+        "contact_email": "contact@acme.com",
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["email"] == "biz@test.com"
+    assert data["role"] == "merchant_admin"
+    assert data["merchant_id"] is not None
+
+
+def test_register_merchant_duplicate_email(client):
+    payload = {
+        "email": "biz2@test.com",
+        "password": "secret123",
+        "business_name": "Acme2",
+        "ein": "99-1111111",
+        "contact_email": "biz2@test.com",
+    }
+    client.post("/auth/register/merchant", json=payload)
+    resp = client.post("/auth/register/merchant", json={**payload, "ein": "99-2222222"})
+    assert resp.status_code == 409
+
+
+def test_register_merchant_duplicate_ein(client):
+    client.post("/auth/register/merchant", json={
+        "email": "biz3@test.com",
+        "password": "secret123",
+        "business_name": "Acme3",
+        "ein": "77-9999999",
+        "contact_email": "biz3@test.com",
+    })
+    resp = client.post("/auth/register/merchant", json={
+        "email": "biz4@test.com",
+        "password": "secret123",
+        "business_name": "Acme4",
+        "ein": "77-9999999",
+        "contact_email": "biz4@test.com",
+    })
+    assert resp.status_code == 409

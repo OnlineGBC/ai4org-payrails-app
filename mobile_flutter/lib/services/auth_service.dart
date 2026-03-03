@@ -31,6 +31,23 @@ class AuthService {
     return User.fromJson(response.data);
   }
 
+  Future<User> registerMerchant({
+    required String email,
+    required String password,
+    required String businessName,
+    required String ein,
+    required String contactEmail,
+  }) async {
+    final response = await _api.post(ApiConfig.registerMerchant, data: {
+      'email': email,
+      'password': password,
+      'business_name': businessName,
+      'ein': ein,
+      'contact_email': contactEmail,
+    });
+    return User.fromJson(response.data);
+  }
+
   Future<User> getMe() async {
     final response = await _api.get(ApiConfig.me);
     return User.fromJson(response.data);

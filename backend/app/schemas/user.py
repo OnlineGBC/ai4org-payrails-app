@@ -40,3 +40,11 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+
+class MerchantRegisterPayload(BaseModel):
+    email: str
+    password: str
+    business_name: str
+    ein: str
+    contact_email: str

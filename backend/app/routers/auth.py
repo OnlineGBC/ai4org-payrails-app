@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.models.merchant import Merchant
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate, TokenResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate, TokenResponse, MerchantRegisterPayload
 from app.services.auth_service import (
     hash_password,
     verify_password,
@@ -23,11 +24,52 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
         )
+    # Create a linked merchant record for the consumer so they can manage bank accounts
+    local_part = payload.email.split("@")[0]
+    merchant = Merchant(
+        name=local_part,
+        contact_email=payload.email,
+        onboarding_status="active",
+        kyb_status="not_required",
+    )
+    db.add(merchant)
+    db.flush()  # get merchant.id before commit
     user = User(
         email=payload.email,
         hashed_password=hash_password(payload.password),
         role=payload.role,
-        merchant_id=payload.merchant_id,
+        merchant_id=merchant.id,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.post("/register/merchant", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def register_merchant(payload: MerchantRegisterPayload, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == payload.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+        )
+    if db.query(Merchant).filter(Merchant.ein == payload.ein).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="EIN already registered"
+        )
+    merchant = Merchant(
+        name=payload.business_name,
+        ein=payload.ein,
+        contact_email=payload.contact_email,
+        onboarding_status="active",
+        kyb_status="not_submitted",
+    )
+    db.add(merchant)
+    db.flush()
+    user = User(
+        email=payload.email,
+        hashed_password=hash_password(payload.password),
+        role="merchant_admin",
+        merchant_id=merchant.id,
     )
     db.add(user)
     db.commit()

@@ -126,9 +126,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ListTile(
                     leading: const Icon(Icons.email),
                     title: Text(user?.email ?? 'Not logged in'),
-                    subtitle: Text('Role: ${user?.role ?? 'unknown'}'),
+                    subtitle: Text(
+                      user?.isConsumer == true
+                          ? 'Consumer account'
+                          : 'Role: ${user?.role ?? 'unknown'}',
+                    ),
                   ),
-                  if (user?.merchantId != null)
+                  if (user?.isMerchant == true)
                     ListTile(
                       leading: const Icon(Icons.business),
                       title: const Text('Merchant'),
@@ -329,20 +333,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push(RouteNames.bankAccounts),
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.qr_code),
-                  title: const Text('Display QR to Receive Funds'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(RouteNames.qrGenerate),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.nfc),
-                  title: const Text('NFC Payment'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(RouteNames.nfcPay),
-                ),
+                if (user?.isMerchant == true) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.qr_code),
+                    title: const Text('Display QR to Receive Funds'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(RouteNames.qrGenerate),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.nfc),
+                    title: const Text('NFC Payment'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(RouteNames.nfcPay),
+                  ),
+                ],
               ],
             ),
           ),

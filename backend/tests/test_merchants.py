@@ -105,6 +105,55 @@ def test_add_bank_account_invalid_routing(client, seed_data):
         "account_number": "9876543210",
     }, headers=headers)
     assert resp.status_code == 400
+    assert resp.json()["detail"] == "Invalid routing number"
+
+
+def test_add_bank_account_bad_checksum_routing(client, seed_data):
+    """Routing number 061000027 fails ABA checksum — must return 400 with clear message."""
+    headers = get_auth_header()
+    resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "routing_number": "061000027",
+        "account_number": "9876543210",
+    }, headers=headers)
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Invalid routing number"
+
+
+# ---------------------------------------------------------------------------
+# GET /banks — public endpoint
+# ---------------------------------------------------------------------------
+
+def test_list_banks_no_auth(client, seed_data):
+    """GET /banks requires no authentication."""
+    resp = client.get("/banks")
+    assert resp.status_code == 200
+    banks = resp.json()
+    assert isinstance(banks, list)
+    assert len(banks) > 0
+
+
+def test_list_banks_structure(client, seed_data):
+    """Each bank entry has id, bank_name, and supported_rails list."""
+    resp = client.get("/banks")
+    assert resp.status_code == 200
+    for bank in resp.json():
+        assert "id" in bank
+        assert "bank_name" in bank
+        assert isinstance(bank["supported_rails"], list)
+
+
+def test_list_banks_sorted(client, seed_data):
+    """Banks are returned in alphabetical order."""
+    resp = client.get("/banks")
+    names = [b["bank_name"] for b in resp.json()]
+    assert names == sorted(names)
+
+
+def test_list_banks_contains_expected(client, seed_data):
+    """MockBank is always seeded by the startup fixture."""
+    resp = client.get("/banks")
+    names = [b["bank_name"] for b in resp.json()]
+    assert "MockBank" in names
 
 
 def test_verify_micro_deposits(client, seed_data):

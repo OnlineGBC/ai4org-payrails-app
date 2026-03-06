@@ -128,13 +128,17 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
                 ),
               TextFormField(
                 controller: _bankNameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Bank Name (optional)',
-                  prefixIcon: const Icon(Icons.business),
-                  suffixIcon: TextButton(
-                    onPressed: _showBankSearch,
-                    child: const Text('Browse'),
-                  ),
+                  prefixIcon: Icon(Icons.business),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _showBankSearch,
+                  icon: const Icon(Icons.account_balance, size: 16),
+                  label: const Text('Browse supported banks'),
                 ),
               ),
               const SizedBox(height: 16),

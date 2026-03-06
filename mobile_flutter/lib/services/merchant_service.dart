@@ -1,4 +1,5 @@
 import '../config/api_config.dart';
+import '../models/bank_config.dart';
 import '../models/merchant.dart';
 import '../models/bank_account.dart';
 import 'api_client.dart';
@@ -7,6 +8,12 @@ class MerchantService {
   final ApiClient _api;
 
   MerchantService(this._api);
+
+  Future<List<BankConfig>> getSupportedBanks() async {
+    final response = await _api.get('/banks');
+    final items = response.data as List;
+    return items.map((e) => BankConfig.fromJson(e)).toList();
+  }
 
   Future<Merchant> getMerchant(String merchantId) async {
     final response = await _api.get('${ApiConfig.merchants}/$merchantId/status');

@@ -5,6 +5,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.bank_account import BankAccount
+from app.models.bank_config import BankConfig
 from app.schemas.merchant import MerchantCreate, MerchantUpdate, MerchantResponse, KYBSubmit
 from app.schemas.bank_account import BankAccountCreate, BankAccountResponse, MicroDepositVerify
 from app.services.merchant_service import create_merchant, get_merchant, update_merchant, submit_kyb
@@ -17,6 +18,29 @@ from app.services.account_verification import (
 )
 from app.utils.encryption import encrypt_value, decrypt_value
 from app.services.event_service import log_event
+
+# Public router — no auth required
+banks_router = APIRouter(tags=["banks"])
+
+
+@banks_router.get("/banks")
+def list_supported_banks(db: Session = Depends(get_db)):
+    """Public endpoint — returns all active supported banks."""
+    banks = (
+        db.query(BankConfig)
+        .filter(BankConfig.is_active == True)
+        .order_by(BankConfig.bank_name)
+        .all()
+    )
+    return [
+        {
+            "id": b.id,
+            "bank_name": b.bank_name,
+            "supported_rails": b.supported_rails.split(",") if b.supported_rails else [],
+        }
+        for b in banks
+    ]
+
 
 router = APIRouter(prefix="/merchants", tags=["merchants"])
 

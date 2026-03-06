@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/bank_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/merchant_provider.dart';
 import '../../widgets/payrails_app_bar.dart';
@@ -28,6 +30,19 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
     super.dispose();
   }
 
+  /// Extract a human-readable message from any exception.
+  String _friendlyError(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map && data['detail'] != null) {
+        return data['detail'].toString();
+      }
+      final code = e.response?.statusCode;
+      if (code != null) return 'Server error ($code). Please try again.';
+    }
+    return e.toString();
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -51,14 +66,43 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
       );
 
       if (mounted) {
-        // Return the new account to the caller so it can navigate to verification
         context.pop(account);
       }
     } catch (e) {
-      setState(() => _error = 'Failed to add account: $e');
+      setState(() => _error = _friendlyError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _showBankSearch() async {
+    final service = ref.read(merchantServiceProvider);
+    List<BankConfig> banks = [];
+    String? loadError;
+
+    try {
+      banks = await service.getSupportedBanks();
+    } catch (e) {
+      loadError = _friendlyError(e);
+    }
+
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => _BankSearchSheet(
+        banks: banks,
+        loadError: loadError,
+        onSelected: (bank) {
+          Navigator.pop(ctx);
+          setState(() => _bankNameController.text = bank.bankName);
+        },
+      ),
+    );
   }
 
   @override
@@ -84,9 +128,13 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
                 ),
               TextFormField(
                 controller: _bankNameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Bank Name (optional)',
-                  prefixIcon: Icon(Icons.business),
+                  prefixIcon: const Icon(Icons.business),
+                  suffixIcon: TextButton(
+                    onPressed: _showBankSearch,
+                    child: const Text('Browse'),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -129,6 +177,139 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bank search bottom sheet
+// ---------------------------------------------------------------------------
+
+class _BankSearchSheet extends StatefulWidget {
+  final List<BankConfig> banks;
+  final String? loadError;
+  final ValueChanged<BankConfig> onSelected;
+
+  const _BankSearchSheet({
+    required this.banks,
+    required this.loadError,
+    required this.onSelected,
+  });
+
+  @override
+  State<_BankSearchSheet> createState() => _BankSearchSheetState();
+}
+
+class _BankSearchSheetState extends State<_BankSearchSheet> {
+  final _searchController = TextEditingController();
+  late List<BankConfig> _filtered;
+
+  @override
+  void initState() {
+    super.initState();
+    _filtered = widget.banks;
+    _searchController.addListener(_onSearch);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearch() {
+    final q = _searchController.text.toLowerCase();
+    setState(() {
+      _filtered = widget.banks
+          .where((b) => b.bankName.toLowerCase().contains(q))
+          .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.65,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      builder: (_, scrollController) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text('Supported Banks',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Search banks…',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (widget.loadError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  'Could not load banks: ${widget.loadError}',
+                  style: TextStyle(color: Colors.red.shade700),
+                ),
+              )
+            else if (_filtered.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text('No banks match your search.')),
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  itemCount: _filtered.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final bank = _filtered[i];
+                    return ListTile(
+                      leading: const Icon(Icons.account_balance),
+                      title: Text(bank.bankName),
+                      subtitle: Wrap(
+                        spacing: 4,
+                        children: bank.supportedRails
+                            .where((r) => r != 'card')
+                            .map((r) => Chip(
+                                  label: Text(r.toUpperCase(),
+                                      style: const TextStyle(fontSize: 10)),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                ))
+                            .toList(),
+                      ),
+                      onTap: () => widget.onSelected(bank),
+                    );
+                  },
+                ),
+              ),
+          ],
         ),
       ),
     );

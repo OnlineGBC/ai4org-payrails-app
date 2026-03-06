@@ -6,6 +6,7 @@ from app.database import engine, SessionLocal
 from app.models import *  # noqa: F401,F403 — register all models
 from app.database import Base
 from app.routers import auth, payments, merchants, webhooks, consumer, wallet_transfer
+from app.routers.merchants import banks_router
 
 app = FastAPI(title="PayRails Backend")
 
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(payments.router)
 app.include_router(merchants.router)
+app.include_router(banks_router)
 app.include_router(webhooks.router)
 app.include_router(consumer.router)
 app.include_router(wallet_transfer.router)

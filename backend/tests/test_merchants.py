@@ -90,17 +90,30 @@ def test_submit_kyb_nonexistent_merchant(client, seed_data):
 def test_add_bank_account(client, seed_data):
     headers = get_auth_header()
     resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "bank_name": "JPMorganTest",
         "routing_number": "021000021",
         "account_number": "9876543210",
     }, headers=headers)
     assert resp.status_code == 201
     assert resp.json()["verification_status"] == "micro_deposit_sent"
     assert resp.json()["account_number_last4"] == "3210"
+    assert resp.json()["bank_name"] == "JPMorganTest"
+
+
+def test_add_bank_account_missing_bank_name(client, seed_data):
+    """bank_name is now required — omitting it returns 422."""
+    headers = get_auth_header()
+    resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "routing_number": "021000021",
+        "account_number": "9876543210",
+    }, headers=headers)
+    assert resp.status_code == 422
 
 
 def test_add_bank_account_invalid_routing(client, seed_data):
     headers = get_auth_header()
     resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "bank_name": "TestBank",
         "routing_number": "123456789",
         "account_number": "9876543210",
     }, headers=headers)
@@ -112,6 +125,7 @@ def test_add_bank_account_bad_checksum_routing(client, seed_data):
     """Routing number 061000027 fails ABA checksum — must return 400 with clear message."""
     headers = get_auth_header()
     resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "bank_name": "TestBank",
         "routing_number": "061000027",
         "account_number": "9876543210",
     }, headers=headers)
@@ -159,6 +173,7 @@ def test_list_banks_contains_expected(client, seed_data):
 def test_verify_micro_deposits(client, seed_data):
     headers = get_auth_header()
     create_resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "bank_name": "TestBank",
         "routing_number": "021000021",
         "account_number": "1111222233",
     }, headers=headers)
@@ -176,6 +191,7 @@ def test_verify_micro_deposits(client, seed_data):
 def test_instant_verify(client, seed_data):
     headers = get_auth_header()
     create_resp = client.post("/merchants/merchant-001/bank-accounts", json={
+        "bank_name": "TestBank",
         "routing_number": "021000021",
         "account_number": "5555666677",
     }, headers=headers)

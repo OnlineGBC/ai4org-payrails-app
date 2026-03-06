@@ -35,8 +35,8 @@ class MerchantService {
     String merchantId, {
     required String routingNumber,
     required String accountNumber,
+    required String bankName,
     String accountType = 'checking',
-    String? bankName,
   }) async {
     final response = await _api.post(
       '${ApiConfig.merchants}/$merchantId/bank-accounts',
@@ -44,7 +44,7 @@ class MerchantService {
         'routing_number': routingNumber,
         'account_number': accountNumber,
         'account_type': accountType,
-        if (bankName != null) 'bank_name': bankName,
+        'bank_name': bankName,
       },
     );
     return BankAccount.fromJson(response.data);

@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 class BankAccountCreate(BaseModel):
-    bank_name: Optional[str] = None
+    bank_name: str
     routing_number: str
     account_number: str
     account_type: str = "checking"

@@ -60,9 +60,7 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
         user!.merchantId!,
         routingNumber: _routingController.text.trim(),
         accountNumber: _accountController.text.trim(),
-        bankName: _bankNameController.text.trim().isEmpty
-            ? null
-            : _bankNameController.text.trim(),
+        bankName: _bankNameController.text.trim(),
       );
 
       if (mounted) {
@@ -129,9 +127,13 @@ class _AddBankAccountScreenState extends ConsumerState<AddBankAccountScreen> {
               TextFormField(
                 controller: _bankNameController,
                 decoration: const InputDecoration(
-                  labelText: 'Bank Name (optional)',
+                  labelText: 'Bank Name',
                   prefixIcon: Icon(Icons.business),
                 ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Bank name is required';
+                  return null;
+                },
               ),
               Align(
                 alignment: Alignment.centerRight,

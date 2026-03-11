@@ -10,27 +10,31 @@ Migrate from ephemeral SQLite (data lost on every Cloud Run restart/deploy) to p
 - `DATABASE_URL` already configurable via env var in `backend/app/config.py`
 - `SEED_DATA` already controlled by env var in `entrypoint.sh`
 
-## Steps
+## Steps (COMPLETED)
 
-### Step 1 — Create Cloud SQL PostgreSQL Instance (one-time)
+### Step 1 — Create Cloud SQL PostgreSQL Instance (one-time) ✅
 ```bash
+gcloud services enable sqladmin.googleapis.com --project=fednowrtppayrails
 gcloud sql instances create payrails-db \
   --database-version=POSTGRES_15 \
   --tier=db-f1-micro \
-  --region=us-east1
+  --region=us-east1 \
+  --project=fednowrtppayrails
 
-gcloud sql databases create payrails --instance=payrails-db
-gcloud sql users create payrails-user --instance=payrails-db --password=CHOOSE_A_PASSWORD
+gcloud sql databases create payrails --instance=payrails-db --project=fednowrtppayrails
+gcloud sql users create payrails-user --instance=payrails-db --password=PayRails2026Secure --project=fednowrtppayrails
 ```
 
-### Step 2 — Grant Cloud Run Access to Cloud SQL (one-time IAM)
+### Step 2 — Grant Cloud Run Access to Cloud SQL (one-time IAM) ✅
 ```bash
 gcloud projects add-iam-policy-binding fednowrtppayrails \
   --member="serviceAccount:1090496405720-compute@developer.gserviceaccount.com" \
   --role="roles/cloudsql.client"
 ```
 
-### Step 3 — Updated Deploy Command (use going forward)
+### Step 3 — Deploy Command (use going forward) ✅
+**IMPORTANT: Avoid special characters in the password — they cause shell interpolation and
+URL parsing issues. Use alphanumeric passwords only.**
 ```bash
 gcloud run deploy payrails \
   --source C:/Users/raja/ai4org_payrails \
@@ -38,7 +42,8 @@ gcloud run deploy payrails \
   --platform managed \
   --allow-unauthenticated \
   --add-cloudsql-instances fednowrtppayrails:us-east1:payrails-db \
-  --set-env-vars SEED_DATA=true,DATABASE_URL=postgresql+psycopg2://payrails-user:CHOOSE_A_PASSWORD@/payrails?host=/cloudsql/fednowrtppayrails:us-east1:payrails-db
+  --set-env-vars "SEED_DATA=false,DATABASE_URL=postgresql+psycopg2://payrails-user:PayRails2026Secure@/payrails?host=/cloudsql/fednowrtppayrails:us-east1:payrails-db" \
+  --project=fednowrtppayrails
 ```
 
 ### Step 4 — Code Fix in main.py (remove SQLite-only create_all)

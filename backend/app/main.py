@@ -2,9 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import engine, SessionLocal
+from app.database import SessionLocal
 from app.models import *  # noqa: F401,F403 — register all models
-from app.database import Base
 from app.routers import auth, payments, merchants, webhooks, consumer, wallet_transfer
 from app.routers.merchants import banks_router
 
@@ -31,7 +30,6 @@ app.include_router(wallet_transfer.router)
 
 @app.on_event("startup")
 def on_startup():
-    Base.metadata.create_all(bind=engine)
     _seed_default_bank_config()
 
 

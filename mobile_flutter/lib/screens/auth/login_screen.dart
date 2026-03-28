@@ -54,10 +54,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.account_balance,
                         size: 64,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Color(0xFF4DB6C4),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -65,6 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                       ),
                       const SizedBox(height: 8),
@@ -72,7 +73,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         'Instantaneous Payments and Near Zero Cost with FedNow and RTP',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey,
+                              color: const Color(0xFFE0E0E0),
                             ),
                       ),
                       const SizedBox(height: 40),
@@ -124,14 +125,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          border: Border.all(color: Colors.amber.shade300),
+                          color: const Color(0xFF0A3528),
+                          border: Border.all(color: const Color(0xFF4DB6C4)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
                           '⚠️  MVP Demo Environment — All transactions are simulated.\n'
                           'Do not enter real personal or financial information.',
-                          style: TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12, color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
                       ),

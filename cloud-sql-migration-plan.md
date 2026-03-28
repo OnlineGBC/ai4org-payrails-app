@@ -46,7 +46,7 @@ the database is the schema/namespace within it (equivalent to creating a SQLite 
 
 ### 4. Create the Database User
 ```bash
-gcloud sql users create payrails-user --instance=payrails-db --password=REDACTED_SEE_SECRET_MANAGER --project=fednowrtppayrails
+gcloud sql users create payrails-user --instance=payrails-db --password=<see Secret Manager: payrails-db-password> --project=fednowrtppayrails
 ```
 Creates a PostgreSQL user `payrails-user` with the given password.
 **IMPORTANT:** Use alphanumeric passwords only — special characters like `@`, `$`, `!`
@@ -84,7 +84,7 @@ gcloud run deploy payrails \
   --platform managed \
   --allow-unauthenticated \
   --add-cloudsql-instances fednowrtppayrails:us-east1:payrails-db \
-  --set-env-vars "SEED_DATA=true,DATABASE_URL=postgresql+psycopg2://payrails-user:REDACTED_SEE_SECRET_MANAGER@/payrails?host=/cloudsql/fednowrtppayrails:us-east1:payrails-db" \
+  --set-env-vars "SEED_DATA=true,DATABASE_URL=postgresql+psycopg2://payrails-user:<see Secret Manager: payrails-db-password>@/payrails?host=/cloudsql/fednowrtppayrails:us-east1:payrails-db" \
   --project=fednowrtppayrails
 ```
 Builds the Docker image from source and deploys to Cloud Run with:
@@ -113,7 +113,7 @@ gcloud run deploy payrails \
   --platform managed \
   --allow-unauthenticated \
   --add-cloudsql-instances fednowrtppayrails:us-east1:payrails-db \
-  --set-env-vars "SEED_DATA=false,DATABASE_URL=postgresql+psycopg2://payrails-user:REDACTED_SEE_SECRET_MANAGER@/payrails?host=/cloudsql/fednowrtppayrails:us-east1:payrails-db" \
+  --set-env-vars "SEED_DATA=false,DATABASE_URL=postgresql+psycopg2://payrails-user:<see Secret Manager: payrails-db-password>@/payrails?host=/cloudsql/fednowrtppayrails:us-east1:payrails-db" \
   --project=fednowrtppayrails
 ```
 Note: `SEED_DATA=false` — database is already seeded, no need to reseed on every deploy.
@@ -141,7 +141,7 @@ Alembic applies the migration automatically on startup.
 | Public IP | 34.26.34.254 |
 | Database name | payrails |
 | DB User | payrails-user |
-| DB Password | REDACTED_SEE_SECRET_MANAGER |
+| DB Password | <see Secret Manager: payrails-db-password> |
 | Connection name | fednowrtppayrails:us-east1:payrails-db |
 
 ---

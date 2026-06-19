@@ -341,13 +341,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => context.push(RouteNames.qrGenerate),
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.nfc),
-                    title: const Text('NFC Payment'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.push(RouteNames.nfcPay),
-                  ),
                 ],
               ],
             ),

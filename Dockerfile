@@ -3,8 +3,6 @@
 # ============================================================
 FROM ghcr.io/cirruslabs/flutter:stable AS flutter-build
 
-ARG APK_API_URL=http://192.168.1.88:8080
-
 WORKDIR /app
 COPY mobile_flutter/ ./mobile_flutter/
 
@@ -16,17 +14,8 @@ RUN flutter pub get
 # Build web with relative base URL (nginx proxies to backend)
 RUN flutter clean && flutter build web --dart-define=API_BASE_URL=relative
 
-# Build APK with configurable backend URL
-RUN flutter build apk --release --dart-define=API_BASE_URL=$APK_API_URL
-
 # ============================================================
-# Stage 2: APK export (extract with: docker build --target apk-export -o out .)
-# ============================================================
-FROM scratch AS apk-export
-COPY --from=flutter-build /app/mobile_flutter/build/app/outputs/flutter-apk/app-release.apk /FedNowRTP_Payrails.apk
-
-# ============================================================
-# Stage 3: Runtime — Python + nginx serving web + API
+# Stage 2: Runtime — Python + nginx serving web + API
 # ============================================================
 FROM python:3.10-slim AS runtime
 

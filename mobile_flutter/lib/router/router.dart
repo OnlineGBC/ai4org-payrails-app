@@ -17,7 +17,6 @@ import '../screens/bank_accounts/verify_bank_account_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/qr/qr_generate_screen.dart';
 import '../screens/qr/qr_scan_screen.dart';
-import '../screens/nfc/nfc_pay_screen.dart';
 import '../screens/consumer/consumer_dashboard_screen.dart';
 import '../screens/consumer/consumer_wallet_screen.dart';
 import '../screens/consumer/consumer_pay_confirm_screen.dart';
@@ -188,10 +187,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: RouteNames.qrScan,
         builder: (context, state) => const QrScanScreen(),
-      ),
-      GoRoute(
-        path: RouteNames.nfcPay,
-        builder: (context, state) => const NfcPayScreen(),
       ),
       GoRoute(
         path: RouteNames.consumerQr,

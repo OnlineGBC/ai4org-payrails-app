@@ -46,11 +46,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             tooltip: 'Display QR to Receive Funds',
             onPressed: () => context.push(RouteNames.qrGenerate),
           ),
-          IconButton(
-            icon: const Icon(Icons.nfc),
-            tooltip: 'NFC Payment',
-            onPressed: () => context.push(RouteNames.nfcPay),
-          ),
         ],
       ),
       body: RefreshIndicator(

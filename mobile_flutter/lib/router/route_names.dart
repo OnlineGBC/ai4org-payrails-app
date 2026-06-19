@@ -12,7 +12,6 @@ class RouteNames {
   static const String settings = '/settings';
   static const String qrGenerate = '/qr/generate';
   static const String qrScan = '/qr/scan';
-  static const String nfcPay = '/nfc/pay';
   static const String consumerDashboard = '/consumer/dashboard';
   static const String consumerPayConfirm = '/consumer/pay-confirm';
   static const String consumerWallet = '/consumer/wallet';

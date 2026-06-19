@@ -1,11 +1,11 @@
 {
-    "name": "instant_pay_app",
-    "short_name": "instant_pay_app",
+    "name": "GBC-ai4org PayRails",
+    "short_name": "PayRails",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A3528",
+    "theme_color": "#0A3528",
+    "description": "Instant B2B and consumer payments over FedNow and RTP, at near-zero cost.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

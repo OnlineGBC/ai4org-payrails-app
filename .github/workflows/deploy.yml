@@ -15,11 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # WIF identifiers below are NOT secrets — they are non-sensitive GCP
+      # resource names. No credentials are stored. App secrets stay in
+      # Google Secret Manager (pulled at deploy time, see the deploy step).
       - id: auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          workload_identity_provider: projects/1090496405720/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: gh-deployer@fednowrtppayrails.iam.gserviceaccount.com
 
       - uses: google-github-actions/setup-gcloud@v2
         with:

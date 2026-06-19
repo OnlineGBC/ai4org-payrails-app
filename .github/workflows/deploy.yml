@@ -1,0 +1,31 @@
+name: Deploy to Cloud Run
+
+# Deploys ONLY when you manually click "Run workflow" in the Actions tab.
+# Nothing auto-deploys — no push or tag triggers a deploy.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for Workload Identity Federation (keyless auth)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: fednowrtppayrails
+
+      - name: Deploy + route traffic
+        run: |
+          gcloud run deploy payrails --source . --project fednowrtppayrails --region us-east1 --platform managed --allow-unauthenticated --min-instances=1 --add-cloudsql-instances fednowrtppayrails:us-east1:payrails-db --set-env-vars SEED_DATA=false,DATABASE_URL=$(gcloud secrets versions access latest --secret=payrails-database-url --project fednowrtppayrails),JWT_SECRET=$(gcloud secrets versions access latest --secret=payrails-jwt-secret --project fednowrtppayrails),ENCRYPTION_KEY=$(gcloud secrets versions access latest --secret=payrails-encryption-key --project fednowrtppayrails)
+          gcloud run services update-traffic payrails --to-latest --project fednowrtppayrails --region us-east1

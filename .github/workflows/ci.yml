@@ -1,0 +1,33 @@
+name: CI
+
+# Runs on every push/PR. Tests only — never deploys.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install -r backend/requirements.txt
+      - run: python -m pytest backend/tests/ -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.0'
+          channel: stable
+      - run: flutter pub get
+        working-directory: mobile_flutter
+      - run: flutter analyze
+        working-directory: mobile_flutter
+      - run: flutter test
+        working-directory: mobile_flutter

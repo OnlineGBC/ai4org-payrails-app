@@ -7,7 +7,10 @@ import '../../widgets/payrails_app_bar.dart';
 import '../../widgets/amount_input.dart';
 
 class SendPaymentScreen extends ConsumerStatefulWidget {
-  const SendPaymentScreen({super.key});
+  /// Optional receiver merchant ID to pre-fill (e.g. from a QR scan).
+  final String? receiverMerchantId;
+
+  const SendPaymentScreen({super.key, this.receiverMerchantId});
 
   @override
   ConsumerState<SendPaymentScreen> createState() => _SendPaymentScreenState();
@@ -21,6 +24,15 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
   String? _selectedRail;
   bool _isLoading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefill = widget.receiverMerchantId;
+    if (prefill != null && prefill.isNotEmpty) {
+      _receiverController.text = prefill;
+    }
+  }
 
   @override
   void dispose() {

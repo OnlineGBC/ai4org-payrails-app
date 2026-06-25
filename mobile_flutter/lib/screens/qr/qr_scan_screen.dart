@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/merchant_provider.dart';
 import '../../router/route_names.dart';
+import '../../utils/pay_routing.dart';
 import '../../widgets/payrails_app_bar.dart';
 
 class QrScanScreen extends ConsumerStatefulWidget {
@@ -29,9 +31,10 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   }
 
   void _navigateToPayConfirm(String merchantId) {
-    context.push(
-      '${RouteNames.consumerPayConfirm}?merchantId=$merchantId',
-    );
+    // Route by role: merchants pay merchant→merchant via the B2B send-payment
+    // flow; consumers pay from their wallet via the consumer pay-confirm flow.
+    final role = ref.read(authStateProvider).user?.role;
+    context.push(payTargetRoute(role: role, merchantId: merchantId));
   }
 
   Future<void> _handleQrData(String data) async {

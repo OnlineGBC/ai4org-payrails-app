@@ -151,7 +151,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RouteNames.sendPayment,
-        builder: (context, state) => const SendPaymentScreen(),
+        builder: (context, state) => SendPaymentScreen(
+          receiverMerchantId: state.uri.queryParameters['receiverMerchantId'],
+        ),
       ),
       GoRoute(
         path: '/payments/:id',

@@ -35,6 +35,10 @@ COPY backend/ /app/backend/
 # Copy Flutter web build from Stage 1
 COPY --from=flutter-build /app/mobile_flutter/build/web/ /app/web/
 
+# Digital Asset Links for the Android TWA — copied explicitly so it lands even
+# if `flutter build web` skips the dot-directory.
+COPY mobile_flutter/web/.well-known/assetlinks.json /app/web/.well-known/assetlinks.json
+
 # Copy nginx config and entrypoint
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY entrypoint.sh /app/entrypoint.sh

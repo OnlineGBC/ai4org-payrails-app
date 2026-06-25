@@ -29,3 +29,11 @@ Thumbs.db
 
 # Build outputs
 out/*.apk
+
+# Android TWA (Bubblewrap) — signing secrets and build artifacts.
+# NEVER commit the keystore: losing it means you can't update the published app.
+*.keystore
+*.jks
+*.aab
+*.apk
+twa/

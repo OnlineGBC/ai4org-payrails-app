@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.onlinegbc.payrails",
       "sha256_cert_fingerprints": [
-        "A1:E6:61:87:5E:3E:E0:17:27:FE:B2:D4:BE:41:7C:B7:91:15:6F:3A:B6:A2:8B:27:08:FA:66:6F:E8:B7:50:20"
+        "A1:E6:61:87:5E:3E:E0:17:27:FE:B2:D4:BE:41:7C:B7:91:15:6F:3A:B6:A2:8B:27:08:FA:66:6F:E8:B7:50:20",
+        "B9:07:C7:E6:D4:9E:F7:62:FC:3F:02:F3:A4:C5:99:3B:A0:A0:DB:72:8C:12:DC:C0:47:08:C9:E0:68:AD:11:EC"
       ]
     }
   }

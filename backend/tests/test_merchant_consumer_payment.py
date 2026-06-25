@@ -240,7 +240,7 @@ class TestMerchantToConsumerMerchant:
                     assert after == pytest.approx(before)
 
     def test_fednow_discount_reaches_consumer_wallet(self, client, mixed_seed_data):
-        """FedNow discount (×0.9875) applies and the net amount reaches the consumer wallet."""
+        """FedNow discount (×0.9995) applies and the net amount reaches the consumer wallet."""
         m_id, _, _, m_email, m_user_id = MULTI_MERCHANTS[0]
         cm_id, _, _, c_user_id, c_email = CONSUMER_MERCHANTS[0]
         with patch("app.services.description_service.generate_description",
@@ -257,8 +257,8 @@ class TestMerchantToConsumerMerchant:
                     _b2b_pay(client, _merchant_headers(m_user_id, m_email),
                              m_id, cm_id, "200.00", preferred_rail="fednow")
                     after = _consumer_balance(client, c_user_id, c_email)
-                    # 200 × 0.9875 = 197.50
-                    assert after - before == pytest.approx(197.50, abs=0.01)
+                    # 200 × 0.9995 = 199.90
+                    assert after - before == pytest.approx(199.90, abs=0.01)
 
     def test_non_consumer_merchant_receiver_no_wallet_credit(
         self, client, mixed_seed_data

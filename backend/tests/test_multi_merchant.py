@@ -6,7 +6,7 @@ Covers (from the implementation plan):
   - AI description generated on every transaction
   - Notifications triggered on completed AND failed payments
   - Balance correctly debited/credited
-  - FedNow/RTP 1.25% discount applied
+  - FedNow/RTP 0.05% discount applied
   - Idempotency across different merchant pairs
   - Profile updates (email, phone) for merchant admins
   - Payment filtering by merchant
@@ -213,7 +213,7 @@ class TestMerchantBalances:
                     h = _headers("user-001", "admin@acme.com")
                     _pay(client, "merchant-001", "merchant-002", "10000.00", h)
                     resp = client.get("/payments/balance?merchant_id=merchant-001", headers=h)
-                    # FedNow applies 1.25% discount: 10000 * 0.9875 = 9875.00
+                    # FedNow applies 0.05% discount: 10000 * 0.9995 = 9995.00
                     assert float(resp.json()["balance"]) < 100000.00
 
     def test_receiver_balance_increases(self, client, full_seed_data):
@@ -231,7 +231,7 @@ class TestMerchantBalances:
                     assert float(resp.json()["balance"]) > 100000.00
 
     def test_fednow_discount_applied(self, client, full_seed_data):
-        """FedNow payments settle at amount × 0.9875."""
+        """FedNow payments settle at amount × 0.9995."""
         with patch("app.services.description_service.generate_description", return_value="x"):
             with patch("app.services.notification_service.notify_transaction"):
                 with patch("app.services.bank.mock_bank.mock_bank_service.initiate_transfer") as mock_bank:
@@ -241,8 +241,8 @@ class TestMerchantBalances:
                     h = _headers("user-001", "admin@acme.com")
                     data = _pay(client, "merchant-001", "merchant-002",
                                 "10000.00", h, rail="fednow")
-                    # Settled amount should be 9875.00
-                    assert float(data["amount"]) == pytest.approx(9875.00)
+                    # Settled amount should be 9995.00
+                    assert float(data["amount"]) == pytest.approx(9995.00)
 
     def test_failed_payment_does_not_change_balance(self, client, full_seed_data):
         """A failed payment must not debit the sender."""

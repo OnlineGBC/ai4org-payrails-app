@@ -126,9 +126,9 @@ def create_payment(db: Session, payload: PaymentCreate) -> PaymentResponse:
 
     # If completed, create ledger entries
     if result.status == "completed":
-        # 1.25% discount for FedNow/RTP rails
+        # 0.05% discount for FedNow/RTP rails
         if rail in ("fednow", "rtp"):
-            settled_amount = (payload.amount * Decimal("0.9875")).quantize(Decimal("0.01"))
+            settled_amount = (payload.amount * Decimal("0.9995")).quantize(Decimal("0.01"))
         else:
             settled_amount = payload.amount
         txn.amount = settled_amount

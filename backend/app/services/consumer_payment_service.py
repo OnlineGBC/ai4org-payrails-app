@@ -100,9 +100,9 @@ def consumer_pay(
 
     # If completed, update ledger entries
     if result.status == "completed":
-        # 1.25% discount for FedNow/RTP rails
+        # 0.05% discount for FedNow/RTP rails
         if rail in ("fednow", "rtp"):
-            settled_amount = (amount * Decimal("0.9875")).quantize(Decimal("0.01"))
+            settled_amount = (amount * Decimal("0.9995")).quantize(Decimal("0.01"))
         else:
             settled_amount = amount
         txn.amount = settled_amount

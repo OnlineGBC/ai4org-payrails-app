@@ -197,7 +197,7 @@ class TestConsumerPaysConsumerMerchant:
     def test_fednow_discount_applies_to_consumer_merchant_payment(
         self, client, consumer_merchant_seed_data
     ):
-        """FedNow payments to a consumer-merchant settle at amount × 0.9875."""
+        """FedNow payments to a consumer-merchant settle at amount × 0.9995."""
         _, _, _, u1_id, u1_email = CONSUMER_MERCHANTS[0]
         m2_id, _, _, u2_id, u2_email = CONSUMER_MERCHANTS[1]
         with patch("app.services.description_service.generate_description",
@@ -226,9 +226,9 @@ class TestConsumerPaysConsumerMerchant:
                     after_sender = _wallet_balance(client, u1_id, u1_email)
                     after_receiver = _wallet_balance(client, u2_id, u2_email)
 
-                    # 100 × 0.9875 = 98.75 settled
-                    assert before_sender - after_sender == pytest.approx(98.75, abs=0.01)
-                    assert after_receiver - before_receiver == pytest.approx(98.75, abs=0.01)
+                    # 100 × 0.9995 = 99.95 settled
+                    assert before_sender - after_sender == pytest.approx(99.95, abs=0.01)
+                    assert after_receiver - before_receiver == pytest.approx(99.95, abs=0.01)
 
     def test_insufficient_balance_rejected(self, client, consumer_merchant_seed_data):
         """Payment exceeding sender's wallet balance is rejected with 400."""

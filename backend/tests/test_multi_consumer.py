@@ -187,7 +187,7 @@ class TestConsumerWalletBalance:
                     assert after > before
 
     def test_fednow_discount_applied_on_consumer_payment(self, client, full_seed_data):
-        """FedNow consumer payments settle at amount × 0.9875."""
+        """FedNow consumer payments settle at amount × 0.9995."""
         u_id, email = MULTI_CONSUMERS[0]
         with patch("app.services.description_service.generate_description",
                    return_value="FedNow purchase"):
@@ -202,8 +202,8 @@ class TestConsumerWalletBalance:
                     _consumer_pay(client, u_id, email, "merchant-001", "100.00",
                                   rail="fednow")
                     after = _get_consumer_balance(client, u_id, email)
-                    # 100 * 0.9875 = 98.75 debited
-                    assert before - after == pytest.approx(98.75, abs=0.01)
+                    # 100 * 0.9995 = 99.95 debited
+                    assert before - after == pytest.approx(99.95, abs=0.01)
 
 
 # ---------------------------------------------------------------------------

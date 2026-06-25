@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/payment_provider.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/payrails_app_bar.dart';
 import '../../widgets/amount_input.dart';
 
@@ -78,7 +79,7 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
         context.pop();
       }
     } catch (e) {
-      setState(() => _error = 'Payment failed: $e');
+      setState(() => _error = friendlyApiError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

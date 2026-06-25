@@ -99,4 +99,22 @@ void main() {
         findsOneWidget);
     expect(find.textContaining('DioException'), findsNothing);
   });
+
+  testWidgets('demo disclaimer uses a dark, readable color (contrast guard)',
+      (tester) async {
+    // The disclaimer sits on a pale amber box; without an explicit color the
+    // text inherits the dark theme's light color and becomes unreadable.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith((ref) => _FakeAuthNotifier()),
+        ],
+        child: const MaterialApp(home: SendPaymentScreen()),
+      ),
+    );
+
+    final disclaimer =
+        tester.widget<Text>(find.textContaining('MVP Demo Environment'));
+    expect(disclaimer.style?.color, const Color(0xFF4E342E));
+  });
 }

@@ -158,7 +158,7 @@ class _SendPaymentScreenState extends ConsumerState<SendPaymentScreen> {
                   child: const Text(
                     '⚠️  MVP Demo Environment — All transactions are simulated.\n'
                     'Do not enter real personal or financial information.',
-                    style: TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF4E342E)),
                     textAlign: TextAlign.center,
                   ),
                 ),

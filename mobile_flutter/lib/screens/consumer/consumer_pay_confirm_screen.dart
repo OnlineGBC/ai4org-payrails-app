@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../providers/consumer_provider.dart';
 import '../../router/route_names.dart';
 import '../../utils/anomaly_detection.dart';
+import '../../utils/api_error.dart';
 import '../../widgets/payrails_app_bar.dart';
 
 // Default descriptions by merchant category — used to pre-populate the field
@@ -194,7 +195,11 @@ class _ConsumerPayConfirmScreenState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          // A 403 here means a non-consumer account (e.g. a merchant) tried to
+          // use the consumer wallet pay flow — guide them to the right ID.
+          _error = (e is DioException && e.response?.statusCode == 403)
+              ? 'Please use your Consumer ID to make wallet payments'
+              : friendlyApiError(e);
           _paying = false;
         });
       }

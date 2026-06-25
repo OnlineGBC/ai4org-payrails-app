@@ -39,6 +39,9 @@ COPY --from=flutter-build /app/mobile_flutter/build/web/ /app/web/
 # if `flutter build web` skips the dot-directory.
 COPY mobile_flutter/web/.well-known/assetlinks.json /app/web/.well-known/assetlinks.json
 
+# Privacy policy page (required for the Play Store listing), copied explicitly.
+COPY mobile_flutter/web/privacy.html /app/web/privacy.html
+
 # Copy nginx config and entrypoint
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY entrypoint.sh /app/entrypoint.sh

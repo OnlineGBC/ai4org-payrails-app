@@ -34,8 +34,12 @@ def on_startup():
 
 
 def _seed_default_bank_config():
-    from app.models.bank_config import BankConfig
+    import logging
     from decimal import Decimal
+
+    from sqlalchemy.exc import OperationalError, ProgrammingError
+
+    from app.models.bank_config import BankConfig
 
     db = SessionLocal()
     try:
@@ -51,6 +55,14 @@ def _seed_default_bank_config():
             )
             db.add(config)
             db.commit()
+    except (OperationalError, ProgrammingError) as exc:
+        # Schema not migrated yet (e.g., a fresh database in CI/tests before
+        # Alembic has run). This best-effort convenience seed must never crash
+        # app startup, so log and skip.
+        db.rollback()
+        logging.getLogger("payrails").warning(
+            "Skipping default bank-config seed: %s", exc
+        )
     finally:
         db.close()
 

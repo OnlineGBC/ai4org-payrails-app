@@ -11,8 +11,9 @@ class Ledger(Base):
     user_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     transaction_id = Column(String, ForeignKey("transactions.id"), nullable=True)
     entry_type = Column(String, nullable=False)  # debit, credit
-    amount = Column(Numeric(12, 2), nullable=False)
-    balance_after = Column(Numeric(12, 2), nullable=False)
+    # Legacy USD-only Decimal columns (nullable: stablecoin entries use base units).
+    amount = Column(Numeric(12, 2), nullable=True)
+    balance_after = Column(Numeric(12, 2), nullable=True)
     description = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 

@@ -13,7 +13,7 @@ class Transaction(Base):
     receiver_user_id = Column(String, nullable=True, index=True)
     sender_bank_account_id = Column(String, nullable=True)
     receiver_bank_account_id = Column(String, nullable=True)
-    amount = Column(Numeric(12, 2), nullable=False)
+    amount = Column(Numeric(12, 2), nullable=True)  # USD amount; stablecoin uses amount_base_units
     currency = Column(String, default="USD")
     rail = Column(String, nullable=True)  # fednow, rtp, ach, card
     status = Column(String, default="pending")  # pending, processing, completed, failed, cancelled

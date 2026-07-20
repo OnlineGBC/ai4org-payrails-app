@@ -16,6 +16,8 @@ from app.models.transaction import Transaction
 from app.models.kyc_record import KycRecord
 from app.models.crypto_account import CryptoAccount
 from app.models.ledger import Ledger
+from app.services.event_service import log_event
+from app.services.screening_service import screen_address, ScreeningBlockedError
 from app.services.stablecoin import get_stablecoin_provider
 from app.services.stablecoin.schemas import KycStatus, OnchainStatus
 from app.services.units import to_base_units, from_base_units
@@ -50,6 +52,8 @@ def ensure_kyc(db: Session, user_id: str, payload: Optional[dict] = None) -> Kyc
         record.status = status.value
     db.commit()
     db.refresh(record)
+    if record.status == KycStatus.APPROVED.value:
+        log_event(db, "stablecoin.kyc_approved", "stablecoin_service", user_id, {"partner_kyc_id": partner_kyc_id})
     return record
 
 
@@ -133,7 +137,10 @@ def onramp(db: Session, user_id: str, usd_amount: Decimal, asset_code: str, netw
         status="processing", receiver_user_id=user_id,
         description=f"On-ramp {usd_amount} USD to {asset_code}",
     )
-    return apply_settlement_update(db, tx, result.status, result.confirmations, result.onchain_tx_hash)
+    tx = apply_settlement_update(db, tx, result.status, result.confirmations, result.onchain_tx_hash)
+    log_event(db, "stablecoin.onramp", "stablecoin_service", tx.id,
+              {"asset": asset_code, "usd_amount": str(usd_amount), "status": tx.status})
+    return tx
 
 
 def offramp(db: Session, user_id: str, asset_code: str, amount: Decimal, network: str = "ethereum") -> Transaction:
@@ -160,15 +167,27 @@ def offramp(db: Session, user_id: str, asset_code: str, amount: Decimal, network
     )
     debit.transaction_id = tx.id
     db.commit()
+    log_event(db, "stablecoin.offramp", "stablecoin_service", tx.id,
+              {"asset": asset_code, "amount": str(amount), "status": status})
     return tx
 
 
 def send_stablecoin(db: Session, user_id: str, to_address: str, asset_code: str, amount: Decimal, network: str = "ethereum") -> Transaction:
-    """Send stablecoin on-chain to an external address; debits the user's wallet."""
+    """Send stablecoin on-chain to an external address; debits the user's wallet.
+
+    The destination address is sanctions/KYT-screened before any funds move; a
+    'block' result stops the transfer (no debit) and is recorded for audit.
+    """
     require_kyc_approved(db, user_id)
     account = ensure_crypto_account(db, user_id, asset_code, network)
-    provider = get_stablecoin_provider()
 
+    screening = screen_address(db, to_address, asset_code, network)
+    if screening.result == "block":
+        log_event(db, "stablecoin.screening_block", "stablecoin_service", user_id,
+                  {"address": to_address, "risk_score": str(screening.risk_score)})
+        raise ScreeningBlockedError(f"Destination address blocked by screening: {to_address}")
+
+    provider = get_stablecoin_provider()
     debit = wallet_debit(db, user_id, amount, description=f"Send {amount} {asset_code}", asset_code=asset_code)
     result = provider.transfer(account.partner_account_id, to_address, asset_code, network, amount, _new_key())
 
@@ -186,7 +205,11 @@ def send_stablecoin(db: Session, user_id: str, to_address: str, asset_code: str,
         description=f"Send {amount} {asset_code} to {to_address}",
     )
     debit.transaction_id = tx.id
+    screening.transaction_id = tx.id
     db.commit()
+    log_event(db, "stablecoin.send", "stablecoin_service", tx.id,
+              {"asset": asset_code, "amount": str(amount), "to": to_address,
+               "status": status, "screening": screening.result})
     return tx
 
 
@@ -202,7 +225,10 @@ def credit_deposit(db: Session, user_id: str, asset_code: str, amount: Decimal, 
         confirmations=12, partner_transfer_id=None, status="processing",
         receiver_user_id=user_id, description=f"Deposit {amount} {asset_code}",
     )
-    return apply_settlement_update(db, tx, OnchainStatus.CONFIRMED, 12, onchain_tx_hash)
+    tx = apply_settlement_update(db, tx, OnchainStatus.CONFIRMED, 12, onchain_tx_hash)
+    log_event(db, "stablecoin.deposit", "stablecoin_service", tx.id,
+              {"asset": asset_code, "amount": str(amount), "onchain_tx_hash": onchain_tx_hash})
+    return tx
 
 
 # --------------------------------------------------------- settlement machine

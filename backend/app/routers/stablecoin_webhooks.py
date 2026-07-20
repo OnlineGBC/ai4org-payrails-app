@@ -8,13 +8,25 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models.webhook_event import WebhookEvent
 from app.services.event_service import log_event
 from app.services.stablecoin import get_stablecoin_provider
 from app.services.stablecoin_service import handle_partner_event
+from app.services.webhook_security import verify_hmac
 
 router = APIRouter(prefix="/webhooks", tags=["stablecoin-webhooks"])
+
+
+def _verify_signature(request: Request, raw_body: bytes) -> bool:
+    """Real HMAC verification when a webhook secret is configured; otherwise
+    fall back to the provider check (mock in dev/tests)."""
+    secret = settings.STABLECOIN_WEBHOOK_SECRET
+    if secret:
+        signature = request.headers.get("x-signature", "")
+        return verify_hmac(secret, raw_body, signature)
+    return get_stablecoin_provider().verify_webhook(dict(request.headers), raw_body)
 
 
 @router.post("/stablecoin")
@@ -22,7 +34,7 @@ async def receive_stablecoin_webhook(request: Request, db: Session = Depends(get
     raw_body = await request.body()
     provider = get_stablecoin_provider()
 
-    if not provider.verify_webhook(dict(request.headers), raw_body):
+    if not _verify_signature(request, raw_body):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid webhook signature")
 
     event = provider.parse_webhook_event(raw_body)

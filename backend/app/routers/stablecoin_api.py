@@ -8,10 +8,11 @@ the service layer.
 from decimal import Decimal
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.crypto_account import CryptoAccount
@@ -19,14 +20,28 @@ from app.models.kyc_record import KycRecord
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.services import stablecoin_service as sc
+from app.services.chain_config import is_supported_network
+from app.services.rate_limiter import rate_limiter
 from app.services.screening_service import ScreeningBlockedError
 from app.services.units import from_base_units
 from app.services.wallet_service import get_wallet_balance
 
-router = APIRouter(prefix="/stablecoin", tags=["stablecoin"])
-
 SUPPORTED_ASSETS = ("USDC", "USD1")
-SUPPORTED_NETWORKS = {"ethereum", "solana", "bnb"}
+
+
+def rate_limit(request: Request, current_user: User = Depends(get_current_user)) -> None:
+    """Per-user, per-route fixed-window rate limit (config-driven)."""
+    if not settings.RATE_LIMIT_ENABLED:
+        return
+    key = f"{current_user.id}:{request.url.path}"
+    if not rate_limiter.allow(
+        key, settings.RATE_LIMIT_MAX_REQUESTS, settings.RATE_LIMIT_WINDOW_SECONDS
+    ):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                            detail="Rate limit exceeded")
+
+
+router = APIRouter(prefix="/stablecoin", tags=["stablecoin"], dependencies=[Depends(rate_limit)])
 
 
 # --------------------------------------------------------------- requests
@@ -75,7 +90,7 @@ def _validate_asset(asset_code: str) -> None:
 
 
 def _validate_network(network: str) -> None:
-    if network not in SUPPORTED_NETWORKS:
+    if not is_supported_network(network):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Unsupported network: {network}")
 

@@ -17,6 +17,15 @@ from app.utils.encryption import encrypt_value
 TEST_DB_URL = "sqlite:///./test.db"
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Rate limiter is a process-global; clear it around each test to isolate."""
+    from app.services.rate_limiter import rate_limiter
+    rate_limiter.clear()
+    yield
+    rate_limiter.clear()
+
+
 @pytest.fixture(scope="function")
 def db_session():
     engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})

@@ -23,6 +23,17 @@ class Settings(BaseSettings):
     BREVO_SMS_SENDER: str = "PayRails"
     # Claude API (AI-generated transaction descriptions)
     ANTHROPIC_API_KEY: str = ""
+    # Stablecoin partner integration (step 4 async processing)
+    # Secret Manager names: payrails-stablecoin-webhook-secret / -worker-secret
+    STABLECOIN_WEBHOOK_SECRET: str = ""   # HMAC secret for inbound partner webhooks
+    STABLECOIN_WORKER_SECRET: str = ""    # shared secret guarding /tasks/* worker endpoints
+    # KYT / blockchain-analytics provider (Secret Manager: payrails-kyt-api-key)
+    KYT_API_KEY: str = ""
+    KYT_BASE_URL: str = ""
+    # API rate limiting (per-instance, fixed window)
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_MAX_REQUESTS: int = 120
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
 
     class Config:
         env_file = ".env"

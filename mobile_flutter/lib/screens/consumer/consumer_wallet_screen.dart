@@ -119,6 +119,17 @@ class _ConsumerWalletScreenState extends ConsumerState<ConsumerWalletScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // Stablecoins entry
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.token),
+                title: const Text('Stablecoins'),
+                subtitle: const Text('USDC · USD1'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(RouteNames.stablecoinWallet),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Balance card
             Card(
               child: Padding(

@@ -22,6 +22,11 @@ import '../screens/consumer/consumer_wallet_screen.dart';
 import '../screens/consumer/consumer_pay_confirm_screen.dart';
 import '../screens/consumer/consumer_qr_screen.dart';
 import '../screens/consumer/consumer_receive_confirm_screen.dart';
+import '../screens/stablecoin/stablecoin_wallet_screen.dart';
+import '../screens/stablecoin/stablecoin_buy_screen.dart';
+import '../screens/stablecoin/stablecoin_sell_screen.dart';
+import '../screens/stablecoin/stablecoin_send_screen.dart';
+import '../screens/stablecoin/stablecoin_receive_screen.dart';
 import 'route_names.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -200,6 +205,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           receiverUserId: state.uri.queryParameters['userId'] ?? '',
           receiverName: state.uri.queryParameters['name'] ?? '',
         ),
+      ),
+      // Stablecoin (USDC / USD1)
+      GoRoute(
+        path: RouteNames.stablecoinWallet,
+        builder: (context, state) => const StablecoinWalletScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.stablecoinBuy,
+        builder: (context, state) => const StablecoinBuyScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.stablecoinSell,
+        builder: (context, state) => const StablecoinSellScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.stablecoinSend,
+        builder: (context, state) => const StablecoinSendScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.stablecoinReceive,
+        builder: (context, state) => const StablecoinReceiveScreen(),
       ),
     ],
   );

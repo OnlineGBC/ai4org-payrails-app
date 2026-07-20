@@ -20,4 +20,9 @@ class RouteNames {
   static const String consumerReceiveConfirm = '/consumer/receive-confirm';
   static const String forgotPassword = '/auth/forgot-password';
   static const String resetPassword = '/auth/reset-password';
+  static const String stablecoinWallet = '/stablecoin';
+  static const String stablecoinBuy = '/stablecoin/buy';
+  static const String stablecoinSell = '/stablecoin/sell';
+  static const String stablecoinSend = '/stablecoin/send';
+  static const String stablecoinReceive = '/stablecoin/receive';
 }

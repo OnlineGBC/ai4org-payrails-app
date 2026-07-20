@@ -10,6 +10,7 @@ from app.models.asset_network import AssetNetwork
 from app.models.crypto_account import CryptoAccount
 from app.models.kyc_record import KycRecord
 from app.models.sanctions_screening import SanctionsScreening
+from app.models.webhook_event import WebhookEvent
 
 __all__ = [
     "User",
@@ -24,4 +25,5 @@ __all__ = [
     "CryptoAccount",
     "KycRecord",
     "SanctionsScreening",
+    "WebhookEvent",
 ]

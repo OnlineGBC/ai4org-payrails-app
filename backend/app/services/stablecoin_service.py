@@ -234,3 +234,84 @@ def apply_settlement_update(
     db.commit()
     db.refresh(tx)
     return tx
+
+
+# ----------------------------------------------------- async processing (step 4)
+
+def _apply_kyc_update(db: Session, user_id: str, partner_kyc_id: Optional[str], status: KycStatus) -> KycRecord:
+    record = db.query(KycRecord).filter(KycRecord.user_id == user_id).first()
+    if record is None:
+        record = KycRecord(user_id=user_id, partner="mock", partner_kyc_id=partner_kyc_id, status=status.value)
+        db.add(record)
+    else:
+        if partner_kyc_id:
+            record.partner_kyc_id = partner_kyc_id
+        record.status = status.value
+    db.commit()
+    db.refresh(record)
+    return record
+
+
+def handle_partner_event(db: Session, event: dict) -> str:
+    """Dispatch a normalized partner webhook event to the right handler.
+
+    Each branch is idempotent at the service layer (deposits keyed by tx hash,
+    settlement guarded by an existing ledger entry, KYC upserted), so redelivery
+    is safe on top of the event-id dedupe in the router.
+    """
+    etype = event.get("type")
+    data = event.get("data", {}) or {}
+
+    if etype == "deposit.confirmed":
+        credit_deposit(
+            db, data["user_id"], data["asset_code"], Decimal(str(data["amount"])),
+            data["onchain_tx_hash"], data.get("network", "ethereum"),
+        )
+        return "deposit_credited"
+
+    if etype == "transfer.updated":
+        tx = db.query(Transaction).filter(
+            Transaction.partner_transfer_id == data["partner_transfer_id"]
+        ).first()
+        if not tx:
+            return "transfer_not_found"
+        apply_settlement_update(
+            db, tx, OnchainStatus(data["status"]),
+            int(data.get("confirmations", 0)), data.get("onchain_tx_hash"),
+        )
+        return "transfer_updated"
+
+    if etype == "kyc.updated":
+        _apply_kyc_update(db, data["user_id"], data.get("partner_kyc_id"), KycStatus(data["status"]))
+        return "kyc_updated"
+
+    return "ignored"
+
+
+def poll_pending_settlements(db: Session, limit: int = 100) -> int:
+    """Poll the partner for still-pending on-chain transfers and advance them.
+
+    Backstop for missed webhooks; invoked by the /tasks/settle worker endpoint.
+    """
+    provider = get_stablecoin_provider()
+    pending = db.query(Transaction).filter(
+        Transaction.settlement_type == "onchain",
+        Transaction.onchain_status.in_(["submitted", "confirming"]),
+        Transaction.partner_transfer_id.isnot(None),
+    ).limit(limit).all()
+
+    for tx in pending:
+        result = provider.get_transfer_status(tx.partner_transfer_id)
+        apply_settlement_update(db, tx, result.status, result.confirmations, result.onchain_tx_hash)
+    return len(pending)
+
+
+def run_reconciliation(db: Session) -> list:
+    """Reconcile every user crypto account against the partner balance."""
+    from app.services.reconciliation_service import reconcile_wallet
+
+    reports = []
+    accounts = db.query(CryptoAccount).filter(CryptoAccount.user_id.isnot(None)).all()
+    for acct in accounts:
+        reports.append(reconcile_wallet(db, acct.user_id, acct.asset_code, acct.partner_account_id))
+    return reports

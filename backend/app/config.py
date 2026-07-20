@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     BREVO_SMS_SENDER: str = "PayRails"
     # Claude API (AI-generated transaction descriptions)
     ANTHROPIC_API_KEY: str = ""
+    # Stablecoin partner integration (step 4 async processing)
+    STABLECOIN_WEBHOOK_SECRET: str = ""   # HMAC secret for inbound partner webhooks
+    STABLECOIN_WORKER_SECRET: str = ""    # shared secret guarding /tasks/* worker endpoints
 
     class Config:
         env_file = ".env"

@@ -35,6 +35,26 @@ app.include_router(stablecoin_api.router)
 @app.on_event("startup")
 def on_startup():
     _seed_default_bank_config()
+    _seed_stablecoin_balances_if_enabled()
+
+
+def _seed_stablecoin_balances_if_enabled():
+    import logging
+    from sqlalchemy.exc import OperationalError, ProgrammingError
+
+    if not settings.SEED_STABLECOIN_BALANCES:
+        return
+    from app.services.stablecoin_seed import seed_stablecoin_balances
+
+    db = SessionLocal()
+    try:
+        result = seed_stablecoin_balances(db)
+        logging.getLogger("payrails").info("Seeded stablecoin balances: %s", result)
+    except (OperationalError, ProgrammingError) as exc:
+        db.rollback()
+        logging.getLogger("payrails").warning("Skipping stablecoin balance seed: %s", exc)
+    finally:
+        db.close()
 
 
 def _seed_default_bank_config():

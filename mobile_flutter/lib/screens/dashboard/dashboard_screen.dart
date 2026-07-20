@@ -115,6 +115,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 label: const Text('Display QR to Receive Funds'),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Stablecoins
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.token),
+                title: const Text('Stablecoins'),
+                subtitle: const Text('USDC · USD1'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(RouteNames.stablecoinWallet),
+              ),
+            ),
             const SizedBox(height: 24),
 
             // Recent transactions

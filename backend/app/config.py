@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_MAX_REQUESTS: int = 120
     RATE_LIMIT_WINDOW_SECONDS: int = 60
+    # Seed demo stablecoin balances on startup (idempotent). Enabled in prod deploy.
+    SEED_STABLECOIN_BALANCES: bool = False
 
     class Config:
         env_file = ".env"

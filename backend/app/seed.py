@@ -253,6 +253,11 @@ def seed():
             wallet_credit(db, "user-consumer-002", Decimal("500.00"), description="Initial wallet balance")
             print("Credited $500 to consumer2@test.com")
 
+        # Stablecoin demo balances (idempotent): merchants 100000, consumers 1000 of each.
+        from app.services.stablecoin_seed import seed_stablecoin_balances
+        result = seed_stablecoin_balances(db)
+        print(f"Seeded stablecoin balances: {result}")
+
         print("\nSeed complete!")
     finally:
         db.close()

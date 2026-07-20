@@ -1,10 +1,13 @@
-"""Stablecoin orchestration (step 3 business logic).
+"""Stablecoin orchestration.
 
 Wires the regulated-partner provider (mock today) to the multi-asset ledger:
 KYC gating, custodial-account provisioning, on/off-ramp, send, deposit crediting,
-and an idempotent settlement state machine. No HTTP endpoints yet (step 6) and no
-async workers yet (step 4) -- callers invoke these synchronously; the mock
-provider settles instantly to CONFIRMED.
+and an idempotent settlement state machine.
+
+Balances belong to an OWNER, which is either a consumer wallet (user_id) or a
+merchant entity (merchant_id). Pass merchant_id to route the balance to the
+merchant; omit it (the default) for a consumer wallet. KYC is always keyed to the
+acting user (user_id).
 """
 import uuid
 from decimal import Decimal
@@ -17,11 +20,12 @@ from app.models.kyc_record import KycRecord
 from app.models.crypto_account import CryptoAccount
 from app.models.ledger import Ledger
 from app.services.event_service import log_event
+from app.services.ledger_service import record_credit, record_debit, get_balance
 from app.services.screening_service import screen_address, ScreeningBlockedError
 from app.services.stablecoin import get_stablecoin_provider
 from app.services.stablecoin.schemas import KycStatus, OnchainStatus
 from app.services.units import to_base_units, from_base_units
-from app.services.wallet_service import wallet_credit, wallet_debit
+from app.services.wallet_service import wallet_credit, wallet_debit, get_wallet_balance
 
 
 class KycRequiredError(PermissionError):
@@ -32,10 +36,35 @@ def _new_key() -> str:
     return uuid.uuid4().hex
 
 
+# --------------------------------------------------------- owner-routed ledger
+
+def _balance(db: Session, asset_code: str, *, user_id: Optional[str] = None,
+             merchant_id: Optional[str] = None) -> Decimal:
+    if merchant_id:
+        return get_balance(db, merchant_id, asset_code)
+    return get_wallet_balance(db, user_id, asset_code)
+
+
+def _credit(db: Session, amount: Decimal, asset_code: str, *, user_id=None, merchant_id=None,
+            transaction_id=None, description=None) -> Ledger:
+    if merchant_id:
+        return record_credit(db, merchant_id, amount, transaction_id, description, asset_code)
+    return wallet_credit(db, user_id, amount, transaction_id, description, asset_code)
+
+
+def _debit(db: Session, amount: Decimal, asset_code: str, *, user_id=None, merchant_id=None,
+           transaction_id=None, description=None) -> Ledger:
+    if merchant_id:
+        if amount > get_balance(db, merchant_id, asset_code):
+            raise ValueError("Insufficient balance")
+        return record_debit(db, merchant_id, amount, transaction_id, description, asset_code)
+    return wallet_debit(db, user_id, amount, transaction_id, description, asset_code)
+
+
 # --------------------------------------------------------------------------- KYC
 
 def ensure_kyc(db: Session, user_id: str, payload: Optional[dict] = None) -> KycRecord:
-    """Idempotently submit/refresh KYC for a user via the partner."""
+    """Idempotently submit/refresh KYC for the acting user via the partner."""
     record = db.query(KycRecord).filter(KycRecord.user_id == user_id).first()
     if record and record.status == KycStatus.APPROVED.value:
         return record
@@ -65,19 +94,22 @@ def require_kyc_approved(db: Session, user_id: str) -> None:
 
 # ----------------------------------------------------------------- accounts
 
-def ensure_crypto_account(db: Session, user_id: str, asset_code: str, network: str) -> CryptoAccount:
-    account = db.query(CryptoAccount).filter(
-        CryptoAccount.user_id == user_id,
-        CryptoAccount.asset_code == asset_code,
-        CryptoAccount.network == network,
-    ).first()
+def ensure_crypto_account(db: Session, user_id: str, asset_code: str, network: str,
+                          merchant_id: Optional[str] = None) -> CryptoAccount:
+    """Get-or-create a custodial account/address for the owner (merchant or user)."""
+    q = db.query(CryptoAccount).filter(
+        CryptoAccount.asset_code == asset_code, CryptoAccount.network == network,
+    )
+    q = q.filter(CryptoAccount.merchant_id == merchant_id) if merchant_id else \
+        q.filter(CryptoAccount.user_id == user_id, CryptoAccount.merchant_id.is_(None))
+    account = q.first()
     if account:
         return account
 
-    provider = get_stablecoin_provider()
-    provided = provider.create_account(user_id, asset_code, network)
+    owner_id = merchant_id or user_id
+    provided = get_stablecoin_provider().create_account(owner_id, asset_code, network)
     account = CryptoAccount(
-        user_id=user_id, partner="mock",
+        user_id=None if merchant_id else user_id, merchant_id=merchant_id, partner="mock",
         partner_account_id=provided.partner_account_id,
         asset_code=asset_code, network=network,
         deposit_address=provided.deposit_address, status="active",
@@ -94,28 +126,20 @@ def _create_tx(
     db: Session, *, direction: str, asset_code: str, amount: Decimal, network: str,
     onchain_tx_hash: Optional[str], onchain_status: str, confirmations: int,
     partner_transfer_id: Optional[str], status: str,
-    sender_user_id: Optional[str] = None, receiver_user_id: Optional[str] = None,
+    sender_user_id=None, receiver_user_id=None,
+    sender_merchant_id=None, receiver_merchant_id=None,
     description: Optional[str] = None,
 ) -> Transaction:
     tx = Transaction(
-        sender_user_id=sender_user_id,
-        receiver_user_id=receiver_user_id,
-        amount=None,
-        amount_base_units=to_base_units(amount, asset_code),
-        currency=asset_code,
-        asset_code=asset_code,
-        status=status,
-        idempotency_key=_new_key(),
-        reference_id=partner_transfer_id,
-        settlement_type="onchain",
-        settlement_network=network,
-        onchain_tx_hash=onchain_tx_hash,
-        onchain_status=onchain_status,
-        confirmations=confirmations,
-        partner="mock",
-        partner_transfer_id=partner_transfer_id,
-        direction=direction,
-        description=description,
+        sender_user_id=sender_user_id, receiver_user_id=receiver_user_id,
+        sender_merchant_id=sender_merchant_id, receiver_merchant_id=receiver_merchant_id,
+        amount=None, amount_base_units=to_base_units(amount, asset_code),
+        currency=asset_code, asset_code=asset_code, status=status,
+        idempotency_key=_new_key(), reference_id=partner_transfer_id,
+        settlement_type="onchain", settlement_network=network,
+        onchain_tx_hash=onchain_tx_hash, onchain_status=onchain_status,
+        confirmations=confirmations, partner="mock",
+        partner_transfer_id=partner_transfer_id, direction=direction, description=description,
     )
     db.add(tx)
     db.commit()
@@ -123,8 +147,9 @@ def _create_tx(
     return tx
 
 
-def onramp(db: Session, user_id: str, usd_amount: Decimal, asset_code: str, network: str = "ethereum") -> Transaction:
-    """Buy stablecoin with USD; credits the user's wallet in `asset_code`."""
+def onramp(db: Session, user_id: str, usd_amount: Decimal, asset_code: str,
+           network: str = "ethereum", merchant_id: Optional[str] = None) -> Transaction:
+    """Buy stablecoin with USD; credits the owner's balance in `asset_code`."""
     require_kyc_approved(db, user_id)
     provider = get_stablecoin_provider()
     quote = provider.quote_onramp(usd_amount, asset_code)
@@ -134,7 +159,8 @@ def onramp(db: Session, user_id: str, usd_amount: Decimal, asset_code: str, netw
         db, direction="onramp", asset_code=asset_code, amount=quote.to_amount, network=network,
         onchain_tx_hash=result.onchain_tx_hash, onchain_status=result.status.value,
         confirmations=result.confirmations, partner_transfer_id=result.partner_transfer_id,
-        status="processing", receiver_user_id=user_id,
+        status="processing",
+        receiver_user_id=None if merchant_id else user_id, receiver_merchant_id=merchant_id,
         description=f"On-ramp {usd_amount} USD to {asset_code}",
     )
     tx = apply_settlement_update(db, tx, result.status, result.confirmations, result.onchain_tx_hash)
@@ -143,17 +169,19 @@ def onramp(db: Session, user_id: str, usd_amount: Decimal, asset_code: str, netw
     return tx
 
 
-def offramp(db: Session, user_id: str, asset_code: str, amount: Decimal, network: str = "ethereum") -> Transaction:
-    """Sell stablecoin for USD; debits the user's wallet in `asset_code`."""
+def offramp(db: Session, user_id: str, asset_code: str, amount: Decimal,
+            network: str = "ethereum", merchant_id: Optional[str] = None) -> Transaction:
+    """Sell stablecoin for USD; debits the owner's balance in `asset_code`."""
     require_kyc_approved(db, user_id)
     provider = get_stablecoin_provider()
 
-    debit = wallet_debit(db, user_id, amount, description=f"Off-ramp {amount} {asset_code}", asset_code=asset_code)
+    debit = _debit(db, amount, asset_code, user_id=user_id, merchant_id=merchant_id,
+                   description=f"Off-ramp {amount} {asset_code}")
     quote = provider.quote_offramp(amount, asset_code)
     result = provider.execute_offramp(quote.quote_id, _new_key())
 
     if result.status == OnchainStatus.FAILED:
-        wallet_credit(db, user_id, amount, description="Off-ramp reversal", asset_code=asset_code)
+        _credit(db, amount, asset_code, user_id=user_id, merchant_id=merchant_id, description="Off-ramp reversal")
         status = "failed"
     else:
         status = "completed"
@@ -162,7 +190,8 @@ def offramp(db: Session, user_id: str, asset_code: str, amount: Decimal, network
         db, direction="offramp", asset_code=asset_code, amount=amount, network=network,
         onchain_tx_hash=result.onchain_tx_hash, onchain_status=result.status.value,
         confirmations=result.confirmations, partner_transfer_id=result.partner_transfer_id,
-        status=status, sender_user_id=user_id,
+        status=status,
+        sender_user_id=None if merchant_id else user_id, sender_merchant_id=merchant_id,
         description=f"Off-ramp {amount} {asset_code} to USD",
     )
     debit.transaction_id = tx.id
@@ -172,27 +201,29 @@ def offramp(db: Session, user_id: str, asset_code: str, amount: Decimal, network
     return tx
 
 
-def send_stablecoin(db: Session, user_id: str, to_address: str, asset_code: str, amount: Decimal, network: str = "ethereum") -> Transaction:
-    """Send stablecoin on-chain to an external address; debits the user's wallet.
+def send_stablecoin(db: Session, user_id: str, to_address: str, asset_code: str, amount: Decimal,
+                    network: str = "ethereum", merchant_id: Optional[str] = None) -> Transaction:
+    """Send stablecoin on-chain to an external address; debits the owner's balance.
 
     The destination address is sanctions/KYT-screened before any funds move; a
     'block' result stops the transfer (no debit) and is recorded for audit.
     """
     require_kyc_approved(db, user_id)
-    account = ensure_crypto_account(db, user_id, asset_code, network)
+    account = ensure_crypto_account(db, user_id, asset_code, network, merchant_id=merchant_id)
 
     screening = screen_address(db, to_address, asset_code, network)
     if screening.result == "block":
-        log_event(db, "stablecoin.screening_block", "stablecoin_service", user_id,
+        log_event(db, "stablecoin.screening_block", "stablecoin_service", merchant_id or user_id,
                   {"address": to_address, "risk_score": str(screening.risk_score)})
         raise ScreeningBlockedError(f"Destination address blocked by screening: {to_address}")
 
     provider = get_stablecoin_provider()
-    debit = wallet_debit(db, user_id, amount, description=f"Send {amount} {asset_code}", asset_code=asset_code)
+    debit = _debit(db, amount, asset_code, user_id=user_id, merchant_id=merchant_id,
+                   description=f"Send {amount} {asset_code}")
     result = provider.transfer(account.partner_account_id, to_address, asset_code, network, amount, _new_key())
 
     if result.status == OnchainStatus.FAILED:
-        wallet_credit(db, user_id, amount, description="Send reversal", asset_code=asset_code)
+        _credit(db, amount, asset_code, user_id=user_id, merchant_id=merchant_id, description="Send reversal")
         status = "failed"
     else:
         status = "completed"
@@ -201,7 +232,8 @@ def send_stablecoin(db: Session, user_id: str, to_address: str, asset_code: str,
         db, direction="send", asset_code=asset_code, amount=amount, network=network,
         onchain_tx_hash=result.onchain_tx_hash, onchain_status=result.status.value,
         confirmations=result.confirmations, partner_transfer_id=result.partner_transfer_id,
-        status=status, sender_user_id=user_id,
+        status=status,
+        sender_user_id=None if merchant_id else user_id, sender_merchant_id=merchant_id,
         description=f"Send {amount} {asset_code} to {to_address}",
     )
     debit.transaction_id = tx.id
@@ -213,8 +245,10 @@ def send_stablecoin(db: Session, user_id: str, to_address: str, asset_code: str,
     return tx
 
 
-def credit_deposit(db: Session, user_id: str, asset_code: str, amount: Decimal, onchain_tx_hash: str, network: str = "ethereum") -> Transaction:
-    """Credit an inbound on-chain deposit. Idempotent by onchain_tx_hash."""
+def credit_deposit(db: Session, user_id: Optional[str], asset_code: str, amount: Decimal,
+                   onchain_tx_hash: str, network: str = "ethereum",
+                   merchant_id: Optional[str] = None) -> Transaction:
+    """Credit an inbound on-chain deposit to the owner. Idempotent by onchain_tx_hash."""
     existing = db.query(Transaction).filter(Transaction.onchain_tx_hash == onchain_tx_hash).first()
     if existing:
         return existing
@@ -223,7 +257,8 @@ def credit_deposit(db: Session, user_id: str, asset_code: str, amount: Decimal, 
         db, direction="deposit", asset_code=asset_code, amount=amount, network=network,
         onchain_tx_hash=onchain_tx_hash, onchain_status=OnchainStatus.CONFIRMED.value,
         confirmations=12, partner_transfer_id=None, status="processing",
-        receiver_user_id=user_id, description=f"Deposit {amount} {asset_code}",
+        receiver_user_id=None if merchant_id else user_id, receiver_merchant_id=merchant_id,
+        description=f"Deposit {amount} {asset_code}",
     )
     tx = apply_settlement_update(db, tx, OnchainStatus.CONFIRMED, 12, onchain_tx_hash)
     log_event(db, "stablecoin.deposit", "stablecoin_service", tx.id,
@@ -239,8 +274,9 @@ def apply_settlement_update(
 ) -> Transaction:
     """Advance a transaction's on-chain state; credit inbound value once confirmed.
 
-    Idempotent: crediting is guarded by the presence of a ledger entry for this
-    transaction, so replays (e.g. duplicate webhooks in step 4) are safe.
+    Idempotent: crediting is guarded by an existing ledger entry for this
+    transaction, so replays (e.g. duplicate webhooks) are safe. Inbound value is
+    routed to the receiver owner (merchant or user).
     """
     tx.onchain_status = status.value
     tx.confirmations = confirmations
@@ -249,12 +285,12 @@ def apply_settlement_update(
 
     if status == OnchainStatus.CONFIRMED and tx.status != "completed":
         already = db.query(Ledger).filter(Ledger.transaction_id == tx.id).first()
-        if tx.direction in ("onramp", "deposit") and tx.receiver_user_id and not already:
+        owner = tx.receiver_merchant_id or tx.receiver_user_id
+        if tx.direction in ("onramp", "deposit") and owner and not already:
             amount = from_base_units(int(tx.amount_base_units or 0), tx.asset_code or "USD")
-            wallet_credit(
-                db, tx.receiver_user_id, amount, transaction_id=tx.id,
-                description=tx.description, asset_code=tx.asset_code or "USD",
-            )
+            _credit(db, amount, tx.asset_code or "USD",
+                    user_id=tx.receiver_user_id, merchant_id=tx.receiver_merchant_id,
+                    transaction_id=tx.id, description=tx.description)
         tx.status = "completed"
 
     db.commit()
@@ -262,7 +298,7 @@ def apply_settlement_update(
     return tx
 
 
-# ----------------------------------------------------- async processing (step 4)
+# ----------------------------------------------------- async processing
 
 def _apply_kyc_update(db: Session, user_id: str, partner_kyc_id: Optional[str], status: KycStatus) -> KycRecord:
     record = db.query(KycRecord).filter(KycRecord.user_id == user_id).first()
@@ -279,19 +315,15 @@ def _apply_kyc_update(db: Session, user_id: str, partner_kyc_id: Optional[str], 
 
 
 def handle_partner_event(db: Session, event: dict) -> str:
-    """Dispatch a normalized partner webhook event to the right handler.
-
-    Each branch is idempotent at the service layer (deposits keyed by tx hash,
-    settlement guarded by an existing ledger entry, KYC upserted), so redelivery
-    is safe on top of the event-id dedupe in the router.
-    """
+    """Dispatch a normalized partner webhook event to the right handler."""
     etype = event.get("type")
     data = event.get("data", {}) or {}
 
     if etype == "deposit.confirmed":
         credit_deposit(
-            db, data["user_id"], data["asset_code"], Decimal(str(data["amount"])),
+            db, data.get("user_id"), data["asset_code"], Decimal(str(data["amount"])),
             data["onchain_tx_hash"], data.get("network", "ethereum"),
+            merchant_id=data.get("merchant_id"),
         )
         return "deposit_credited"
 
@@ -315,10 +347,7 @@ def handle_partner_event(db: Session, event: dict) -> str:
 
 
 def poll_pending_settlements(db: Session, limit: int = 100) -> int:
-    """Poll the partner for still-pending on-chain transfers and advance them.
-
-    Backstop for missed webhooks; invoked by the /tasks/settle worker endpoint.
-    """
+    """Poll the partner for still-pending on-chain transfers and advance them."""
     provider = get_stablecoin_provider()
     pending = db.query(Transaction).filter(
         Transaction.settlement_type == "onchain",
@@ -333,11 +362,13 @@ def poll_pending_settlements(db: Session, limit: int = 100) -> int:
 
 
 def run_reconciliation(db: Session) -> list:
-    """Reconcile every user crypto account against the partner balance."""
-    from app.services.reconciliation_service import reconcile_wallet
+    """Reconcile every crypto account (merchant or user) against the partner balance."""
+    from app.services.reconciliation_service import reconcile_owner
 
     reports = []
-    accounts = db.query(CryptoAccount).filter(CryptoAccount.user_id.isnot(None)).all()
-    for acct in accounts:
-        reports.append(reconcile_wallet(db, acct.user_id, acct.asset_code, acct.partner_account_id))
+    for acct in db.query(CryptoAccount).all():
+        reports.append(reconcile_owner(
+            db, acct.asset_code, acct.partner_account_id,
+            user_id=acct.user_id, merchant_id=acct.merchant_id,
+        ))
     return reports

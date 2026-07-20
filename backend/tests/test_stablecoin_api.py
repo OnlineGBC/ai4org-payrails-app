@@ -27,10 +27,18 @@ def test_requires_auth(client):
     assert client.get("/stablecoin/balances").status_code in (401, 403)
 
 
-def test_rejects_merchant_role(client, db_session):
+def test_unlinked_merchant_rejected(client, db_session):
+    # merchant_admin with no linked merchant entity -> 400
     db_session.add(User(id="api-m", email="apim@test.com", hashed_password=hash_password("x"), role="merchant_admin"))
     db_session.commit()
     headers = _headers("api-m", "apim@test.com", "merchant_admin")
+    assert client.get("/stablecoin/balances", headers=headers).status_code == 400
+
+
+def test_rejects_other_role(client, db_session):
+    db_session.add(User(id="api-a", email="apia@test.com", hashed_password=hash_password("x"), role="admin"))
+    db_session.commit()
+    headers = _headers("api-a", "apia@test.com", "admin")
     assert client.get("/stablecoin/balances", headers=headers).status_code == 403
 
 
